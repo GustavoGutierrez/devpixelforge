@@ -1,0 +1,56 @@
+# ─── Rust ──────────────────────────────────────────────────────
+rust-imgproc/target/
+
+# ─── Go ────────────────────────────────────────────────────────
+# Binarios compilados
+devforge-imgproc-example
+go-bridge/example/devforge-imgproc-example
+
+# ─── Binario Rust (symlink en raíz, generado por make build) ───
+devforge-imgproc
+
+# ─── Salida de ejemplos y pruebas ───────────────────────────────
+output/
+
+# ─── Imágenes de ejemplo / assets de prueba ─────────────────────
+# Mantener assets/ con SVGs de diseño pero ignorar raster de prueba
+assets/*.png
+assets/*.jpg
+assets/*.jpeg
+assets/*.webp
+# No ignorar los SVGs (son fuente de diseño, valen la pena versionar)
+!assets/*.svg
+
+# Imágenes de prueba en la raíz
+*.png
+*.jpg
+*.jpeg
+*.webp
+*.ico
+# Excepto si forman parte del proyecto (ej. README)
+!docs/**/*.png
+
+# ─── PDFs generados ─────────────────────────────────────────────
+*.pdf
+
+# ─── Sistema operativo ──────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+ehthumbs.db
+desktop.ini
+
+# ─── Editores ───────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ─── Variables de entorno ────────────────────────────────────────
+.env
+.env.local
+.env.*.local
