@@ -100,6 +100,33 @@ Esto elimina el overhead de ~5ms de crear un proceso nuevo por cada operación.
 | `placeholder` | LQIP, dominant color, CSS gradient | Single |
 | `batch` | Múltiples operaciones en paralelo | ✅ rayon (por job) |
 
+## Requisitos del sistema
+
+### Compilación estándar (`make build-rust`, `make build`)
+
+- **Rust toolchain** ≥ 1.74 via [rustup](https://rustup.rs/)
+- **Go** ≥ 1.21 (solo para `make build` / `make build-go`)
+
+### Compilación estática musl (`make build-rust-static`)
+
+Genera un binario Linux completamente estático (sin dependencias de glibc).
+Requiere dos dependencias adicionales:
+
+**1. Target Rust para musl:**
+```bash
+rustup target add x86_64-unknown-linux-musl
+```
+
+**2. Linker musl (`musl-gcc`) — Ubuntu/Debian:**
+```bash
+sudo apt-get install musl-tools
+```
+
+> En otras distribuciones: `sudo dnf install musl-gcc` (Fedora/RHEL) o
+> `sudo pacman -S musl` (Arch).
+
+Sin estas dos dependencias el compilador falla con `E0463: can't find crate for 'core'`.
+
 ## Build
 
 ```bash
