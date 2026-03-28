@@ -1,0 +1,8 @@
+{
+  "operation": "rotate",
+  "input": "photo.jpg",
+  "output": "flipped-h.jpg",
+  "flip": "horizontal",
+  "format": "jpeg",
+  "quality": 85
+}

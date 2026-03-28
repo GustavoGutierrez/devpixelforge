@@ -1,0 +1,9 @@
+{
+  "operation": "exif",
+  "input": "photo.jpg",
+  "output": "cleaned.jpg",
+  "exif_op": "strip",
+  "mode": "all",
+  "format": "jpeg",
+  "quality": 85
+}

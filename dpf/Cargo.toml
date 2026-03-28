@@ -1,0 +1,75 @@
+[package]
+name = "dpf"
+version = "0.1.0"
+edition = "2021"
+description = "DevPixelForge - High-performance media (images, videos, audio) processing engine"
+authors = ["Ing. Gustavo Gutiérrez"]
+
+[[bin]]
+name = "dpf"
+path = "src/main.rs"
+
+[features]
+default = []
+# Enable FFmpeg native library support (requires libavcodec, libavutil, etc.)
+# Install FFmpeg dev packages: sudo apt install libavcodec-dev libavutil-dev libavformat-dev libswscale-dev
+ffmpeg-native = ["dep:ffmpeg-next"]
+
+[dependencies]
+# Image processing core
+image = { version = "0.25", features = ["png", "jpeg", "gif", "webp", "ico", "bmp", "tiff", "avif"] }
+webp = "0.3"
+oxipng = { version = "9", features = ["parallel"] }
+mozjpeg = "0.10"
+resvg = "0.44"
+
+# Image operations suite (crop, rotate, adjust, watermark)
+imageproc = "0.25"
+kamadak-exif = "0.6"
+rusttype = "0.9"
+
+# Favicon generation
+ico = "0.3"
+
+# CLI & I/O
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+clap = { version = "4", features = ["derive"] }
+regex = "1"
+
+# Parallelism
+rayon = "1.10"
+
+# Error handling
+anyhow = "1"
+thiserror = "2"
+
+# Base64 for inline output
+base64 = "0.22"
+
+# Video & Audio processing (FFmpeg CLI wrapper)
+ffmpeg-sidecar = "2.4.0"
+
+# Audio metadata and decoding (optional - requires ffmpeg-native)
+symphonia = { version = "0.5.4", features = ["all"], optional = true }
+
+# Audio tag parsing (optional - requires ffmpeg-native)
+audiotags = { version = "0.5.0", optional = true }
+
+# FFmpeg native bindings (optional - requires ffmpeg-native feature)
+ffmpeg-next = { version = "8.1.0", optional = true }
+
+# Logging
+log = "0.4"
+env_logger = "0.11"
+
+[dev-dependencies]
+tempfile = "3"
+assert_fs = "1"
+
+[profile.release]
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+strip = true
+panic = "abort"

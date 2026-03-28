@@ -1,16 +1,33 @@
 # ─── Rust ──────────────────────────────────────────────────────
 rust-imgproc/target/
+dpf/target/
+
+# ─── Test fixtures (large media files - download with script) ────
+dpf/test_fixtures/*.mp4
+dpf/test_fixtures/*.mp3
+dpf/test_fixtures/*.wav
+dpf/test_fixtures/*.ogg
+dpf/test_fixtures/*.webm
+dpf/test_fixtures/*.m4a
+dpf/test_fixtures/*.aac
+dpf/test_fixtures/*.flac
+# But keep the README
+!dpf/test_fixtures/README.md
+# Keep corrupt/ directory structure for error testing
+!dpf/test_fixtures/corrupt/
 
 # ─── Go ────────────────────────────────────────────────────────
 # Binarios compilados
-devforge-imgproc-example
-go-bridge/example/devforge-imgproc-example
+dpf-example
+go-bridge/example/dpf-example
 
 # ─── Binario Rust (symlink en raíz, generado por make build) ───
-devforge-imgproc
-
+dpf
+!/dpf 
 # ─── Salida de ejemplos y pruebas ───────────────────────────────
 output/
+
+.atl/
 
 # ─── Imágenes de ejemplo / assets de prueba ─────────────────────
 # Mantener assets/ con SVGs de diseño pero ignorar raster de prueba
@@ -54,3 +71,20 @@ desktop.ini
 .env
 .env.local
 .env.*.local
+
+# ─── Rust cargo lock (regenerado en build) ───────────────────────
+# Descomenta si prefieres no versionar:
+# dpf/Cargo.lock
+
+# ─── Coverage y profiling ────────────────────────────────────────
+*.prof
+*.profraw
+coverage/
+*.lcov
+
+# ─── Archivos temporales ─────────────────────────────────────────
+*.tmp
+*.temp
+/tmp/
+/tmp/
+*-output/

@@ -1,0 +1,12 @@
+{
+  "operation": "watermark",
+  "input": "photo.jpg",
+  "output": "watermarked-logo.jpg",
+  "image": "logo.png",
+  "position": "top-right",
+  "opacity": 0.5,
+  "offset_x": 10,
+  "offset_y": 10,
+  "format": "jpeg",
+  "quality": 85
+}

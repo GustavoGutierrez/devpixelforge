@@ -1,0 +1,57 @@
+{
+  "examples": [
+    {
+      "name": "Audio Transcode MP3 to AAC",
+      "operation": "audio_transcode",
+      "job": {
+        "operation": "audio_transcode",
+        "input": "audio.mp3",
+        "output": "audio.aac",
+        "codec": "aac",
+        "bitrate": "192k"
+      }
+    },
+    {
+      "name": "Audio Trim",
+      "operation": "audio_trim",
+      "job": {
+        "operation": "audio_trim",
+        "input": "podcast.mp3",
+        "output": "segment.mp3",
+        "start": 60.0,
+        "end": 150.0
+      }
+    },
+    {
+      "name": "Audio Normalize to -14 LUFS (YouTube)",
+      "operation": "audio_normalize",
+      "job": {
+        "operation": "audio_normalize",
+        "input": "audio.mp3",
+        "output": "audio_normalized.mp3",
+        "target_lufs": -14.0
+      }
+    },
+    {
+      "name": "Audio Normalize to -16 LUFS (Spotify)",
+      "operation": "audio_normalize",
+      "job": {
+        "operation": "audio_normalize",
+        "input": "audio.mp3",
+        "output": "audio_spotify.mp3",
+        "target_lufs": -16.0
+      }
+    },
+    {
+      "name": "Audio Silence Trim",
+      "operation": "audio_silence_trim",
+      "job": {
+        "operation": "audio_silence_trim",
+        "input": "audio_with_silence.mp3",
+        "output": "audio_clean.mp3",
+        "threshold_db": -40,
+        "min_duration": 0.5
+      }
+    }
+  ]
+}

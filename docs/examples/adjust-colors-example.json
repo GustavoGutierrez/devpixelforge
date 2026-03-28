@@ -1,0 +1,9 @@
+{
+  "operation": "adjust",
+  "input": "photo.jpg",
+  "output": "desaturated.jpg",
+  "saturation": -0.5,
+  "sharpen": 1.5,
+  "format": "jpeg",
+  "quality": 85
+}

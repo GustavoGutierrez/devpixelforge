@@ -1,0 +1,11 @@
+{
+  "operation": "quality",
+  "input": "photo.png",
+  "output": "optimized.jpg",
+  "target_size": 50000,
+  "tolerance_percent": 5.0,
+  "max_iterations": 10,
+  "min_quality": 30,
+  "max_quality": 95,
+  "format": "jpeg"
+}

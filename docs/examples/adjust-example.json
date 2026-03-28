@@ -1,0 +1,9 @@
+{
+  "operation": "adjust",
+  "input": "photo.jpg",
+  "output": "brightened.jpg",
+  "brightness": 0.2,
+  "contrast": 0.1,
+  "format": "jpeg",
+  "quality": 85
+}

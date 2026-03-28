@@ -1,0 +1,8 @@
+{
+  "operation": "rotate",
+  "input": "photo.jpg",
+  "output": "rotated-90.jpg",
+  "angle": 90,
+  "format": "jpeg",
+  "quality": 85
+}

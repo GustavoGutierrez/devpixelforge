@@ -1,3 +1,3 @@
-module github.com/GustavoGutierrez/devforge-imgproc-bridge
+module github.com/GustavoGutierrez/devpixelforge-bridge
 
 go 1.23

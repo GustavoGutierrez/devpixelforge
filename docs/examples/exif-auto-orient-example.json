@@ -1,0 +1,8 @@
+{
+  "operation": "exif",
+  "input": "photo.jpg",
+  "output": "oriented.jpg",
+  "exif_op": "auto_orient",
+  "format": "jpeg",
+  "quality": 85
+}

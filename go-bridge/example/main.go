@@ -11,7 +11,7 @@ import (
 	"log"
 	"time"
 
-	imgproc "github.com/GustavoGutierrez/devforge-imgproc-bridge"
+	dpf "github.com/GustavoGutierrez/devpixelforge-bridge"
 )
 
 func main() {
@@ -27,7 +27,7 @@ func main() {
 func oneShot() {
 	// El binario se compila con: cargo build --release
 	// y se coloca junto al binario de Go o en PATH
-	client := imgproc.NewClient("./devforge-imgproc")
+	client := dpf.NewClient("./dpf")
 	client.SetTimeout(60 * time.Second)
 	ctx := context.Background()
 
@@ -64,12 +64,127 @@ func oneShot() {
 		log.Fatal(err)
 	}
 	printResult("LQIP Placeholder", result)
+
+	// ── Ejemplo: Crop con gravity center ──
+	cropJob := &dpf.CropJob{
+		Operation: "crop",
+		Input:     "assets/photo.jpg",
+		Output:    "output/cropped.jpg",
+		Gravity:   "center",
+		Width:     uint32Ptr(400),
+		Height:    uint32Ptr(300),
+		Format:    "jpeg",
+		Quality:   uint8Ptr(90),
+	}
+	result, err = client.Crop(ctx, cropJob)
+	if err != nil {
+		log.Fatal(err)
+	}
+	printResult("Smart Crop (center)", result)
+
+	// ── Ejemplo: Rotar imagen 90 grados ──
+	rotateJob := &dpf.RotateJob{
+		Operation: "rotate",
+		Input:     "assets/photo.jpg",
+		Output:    "output/rotated.jpg",
+		Angle:     uint16Ptr(90),
+		Format:    "jpeg",
+		Quality:   uint8Ptr(90),
+	}
+	result, err = client.Rotate(ctx, rotateJob)
+	if err != nil {
+		log.Fatal(err)
+	}
+	printResult("Rotate 90°", result)
+
+	// ── Ejemplo: Watermark de texto ──
+	watermarkJob := &dpf.WatermarkJob{
+		Operation: "watermark",
+		Input:     "assets/photo.jpg",
+		Output:    "output/watermarked.jpg",
+		Text:      "© 2026 DevForge",
+		Position:  "bottom-right",
+		Opacity:   float64Ptr(0.7),
+		FontSize:  uint32Ptr(32),
+		Color:     "#FFFFFF",
+		Format:    "jpeg",
+		Quality:   uint8Ptr(90),
+	}
+	result, err = client.Watermark(ctx, watermarkJob)
+	if err != nil {
+		log.Fatal(err)
+	}
+	printResult("Text Watermark", result)
+
+	// ── Ejemplo: Ajuste de brillo y contraste ──
+	adjustJob := &dpf.AdjustJob{
+		Operation:  "adjust",
+		Input:      "assets/photo.jpg",
+		Output:     "output/adjusted.jpg",
+		Brightness: float64Ptr(0.1),
+		Contrast:   float64Ptr(0.15),
+		Format:     "jpeg",
+		Quality:    uint8Ptr(90),
+	}
+	result, err = client.Adjust(ctx, adjustJob)
+	if err != nil {
+		log.Fatal(err)
+	}
+	printResult("Adjust Brightness/Contrast", result)
+
+	// ── Ejemplo: Auto-quality optimization ──
+	qualityJob := &dpf.QualityJob{
+		Operation:  "quality",
+		Input:      "assets/photo.jpg",
+		Output:     "output/optimized.jpg",
+		TargetSize: 50000, // 50KB target
+		Format:     "jpeg",
+	}
+	result, err = client.AutoQuality(ctx, qualityJob)
+	if err != nil {
+		log.Fatal(err)
+	}
+	printResult("Auto-Quality (50KB target)", result)
+
+	// ── Ejemplo: Generar srcset responsive ──
+	srcsetJob := &dpf.SrcsetJob{
+		Operation:    "srcset",
+		Input:        "assets/hero.jpg",
+		OutputDir:    "output/srcset",
+		Widths:       []uint32{320, 640, 960, 1280, 1920},
+		Densities:    []float64{1.0, 2.0},
+		Format:       "jpeg",
+		Quality:      uint8Ptr(85),
+		GenerateHTML: true,
+		LinearRGB:    true,
+	}
+	result, err = client.Srcset(ctx, srcsetJob)
+	if err != nil {
+		log.Fatal(err)
+	}
+	printResult("Responsive Srcset", result)
+
+	// ── Ejemplo: Strip EXIF data ──
+	exifJob := &dpf.ExifJob{
+		Operation: "exif",
+		Input:     "assets/photo.jpg",
+		Output:    "output/no-exif.jpg",
+		ExifOp:    "strip",
+		Mode:      "all",
+		Format:    "jpeg",
+		Quality:   uint8Ptr(90),
+	}
+	result, err = client.Exif(ctx, exifJob)
+	if err != nil {
+		log.Fatal(err)
+	}
+	printResult("EXIF Strip", result)
 }
 
 func streaming() {
 	// El StreamClient mantiene el proceso Rust vivo.
 	// Ideal para el MCP server que recibe muchas peticiones.
-	sc, err := imgproc.NewStreamClient("./devforge-imgproc")
+	sc, err := dpf.NewStreamClient("./dpf")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -77,25 +192,25 @@ func streaming() {
 
 	// Simular múltiples peticiones MCP en secuencia rápida
 	jobs := []any{
-		&imgproc.ResizeJob{
+		&dpf.ResizeJob{
 			Operation: "resize",
 			Input:     "assets/card.png",
 			OutputDir: "output/cards",
 			Widths:    []uint32{200, 400, 800},
 		},
-		&imgproc.ConvertJob{
+		&dpf.ConvertJob{
 			Operation: "convert",
 			Input:     "assets/icon.svg",
 			Output:    "output/icon.webp",
 			Format:    "webp",
 		},
-		&imgproc.PlaceholderJob{
+		&dpf.PlaceholderJob{
 			Operation: "placeholder",
 			Input:     "assets/banner.jpg",
 			Kind:      strPtr("css_gradient"),
 			Inline:    true,
 		},
-		&imgproc.PlaceholderJob{
+		&dpf.PlaceholderJob{
 			Operation: "placeholder",
 			Input:     "assets/banner.jpg",
 			Kind:      strPtr("dominant_color"),
@@ -137,7 +252,7 @@ func (s *MCPServer) handleOptimizeImages(params json.RawMessage) (any, error) {
     }
 
     // Usar el StreamClient que se inició con el MCP server
-    result, err := s.imgClient.Execute(&imgproc.OptimizeJob{
+    result, err := s.imgClient.Execute(&dpf.OptimizeJob{
         Operation: "optimize",
         Inputs:    req.Paths,
         OutputDir: &req.OutputDir,
@@ -161,22 +276,22 @@ func (s *MCPServer) handleGenerateUI(params json.RawMessage) (any, error) {
     }
 
     // Generar responsive images + favicon + placeholder en un batch
-    result, err := s.imgClient.Execute(&imgproc.BatchJob{
+    result, err := s.imgClient.Execute(&dpf.BatchJob{
         Operation: "batch",
         Jobs: []any{
-            imgproc.ResizeJob{
+            dpf.ResizeJob{
                 Operation: "resize",
                 Input:     req.SVGPath,
                 OutputDir: req.OutputDir + "/responsive",
                 Widths:    req.Sizes,
             },
-            imgproc.FaviconJob{
+            dpf.FaviconJob{
                 Operation:   "favicon",
                 Input:       req.SVGPath,
                 OutputDir:   req.OutputDir + "/favicons",
                 GenerateICO: true,
             },
-            imgproc.PlaceholderJob{
+            dpf.PlaceholderJob{
                 Operation: "placeholder",
                 Input:     req.SVGPath,
                 Inline:    true,
@@ -193,7 +308,7 @@ func (s *MCPServer) handleGenerateUI(params json.RawMessage) (any, error) {
 
 // ─── Helpers ─────────────────────────────────────────────────────
 
-func printResult(label string, result *imgproc.JobResult) {
+func printResult(label string, result *dpf.JobResult) {
 	fmt.Printf("\n%s (took %dms):\n", label, result.ElapsedMs)
 	fmt.Printf("  Success: %v\n", result.Success)
 	fmt.Printf("  Outputs: %d files\n", len(result.Outputs))
@@ -209,4 +324,8 @@ func printResult(label string, result *imgproc.JobResult) {
 	}
 }
 
-func strPtr(s string) *string { return &s }
+func strPtr(s string) *string       { return &s }
+func uint32Ptr(v uint32) *uint32    { return &v }
+func uint16Ptr(v uint16) *uint16    { return &v }
+func uint8Ptr(v uint8) *uint8       { return &v }
+func float64Ptr(v float64) *float64 { return &v }

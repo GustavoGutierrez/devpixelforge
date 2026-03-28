@@ -1,0 +1,13 @@
+{
+  "operation": "crop",
+  "input": "photo.jpg",
+  "output": "cropped.jpg",
+  "rect": {
+    "x": 100,
+    "y": 50,
+    "width": 400,
+    "height": 300
+  },
+  "format": "jpeg",
+  "quality": 85
+}

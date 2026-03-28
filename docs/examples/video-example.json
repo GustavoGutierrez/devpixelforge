@@ -1,0 +1,60 @@
+{
+  "examples": [
+    {
+      "name": "Video Transcode H.264",
+      "operation": "video_transcode",
+      "job": {
+        "operation": "video_transcode",
+        "input": "input.mp4",
+        "output": "output.mp4",
+        "codec": "h264",
+        "bitrate": "2M",
+        "preset": "medium"
+      }
+    },
+    {
+      "name": "Video Resize 720p",
+      "operation": "video_resize",
+      "job": {
+        "operation": "video_resize",
+        "input": "input.mp4",
+        "output": "output_720p.mp4",
+        "height": 720,
+        "maintain_aspect": true
+      }
+    },
+    {
+      "name": "Video Trim",
+      "operation": "video_trim",
+      "job": {
+        "operation": "video_trim",
+        "input": "input.mp4",
+        "output": "clip.mp4",
+        "start": 10.5,
+        "end": 60.0
+      }
+    },
+    {
+      "name": "Video Thumbnail",
+      "operation": "video_thumbnail",
+      "job": {
+        "operation": "video_thumbnail",
+        "input": "input.mp4",
+        "output": "poster.jpg",
+        "timestamp": "25%",
+        "format": "jpeg",
+        "quality": 85
+      }
+    },
+    {
+      "name": "Video Profile web-mid",
+      "operation": "video_profile",
+      "job": {
+        "operation": "video_profile",
+        "input": "input.mp4",
+        "output": "output_web_mid.mp4",
+        "profile": "web-mid"
+      }
+    }
+  ]
+}

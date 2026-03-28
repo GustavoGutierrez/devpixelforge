@@ -1,0 +1,10 @@
+{
+  "operation": "crop",
+  "input": "photo.jpg",
+  "output": "social-thumb.jpg",
+  "gravity": "center",
+  "width": 1080,
+  "height": 1080,
+  "format": "jpeg",
+  "quality": 90
+}

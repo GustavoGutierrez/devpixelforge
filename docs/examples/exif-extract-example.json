@@ -1,0 +1,5 @@
+{
+  "operation": "exif",
+  "input": "photo-with-gps.jpg",
+  "exif_op": "extract"
+}

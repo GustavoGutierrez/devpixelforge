@@ -1,9 +1,9 @@
 .PHONY: build build-rust build-go clean test bench
 
 # ─── Configuración ─────────────────────────────────────────────
-RUST_DIR     := rust-imgproc
+RUST_DIR     := dpf
 GO_DIR       := go-bridge
-BIN_NAME     := devforge-imgproc
+BIN_NAME     := dpf
 RUST_TARGET  := release
 
 # Detectar OS para cross-compile
@@ -37,8 +37,7 @@ build-rust-static:
 build-go: build-rust
 	@echo "🐹 Building Go example..."
 	cd $(GO_DIR)/example && go build -o ../../$(BIN_NAME)-example .
-	@ln -sf $(RUST_DIR)/target/release/$(BIN_NAME) $(BIN_NAME)
-	@echo "✅ Go example built (symlink ./$(BIN_NAME) → $(RUST_DIR)/target/release/$(BIN_NAME))"
+	@echo "✅ Go example built"
 
 # ─── Testing ───────────────────────────────────────────────────
 

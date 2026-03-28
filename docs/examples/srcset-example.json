@@ -1,0 +1,11 @@
+{
+  "operation": "srcset",
+  "input": "hero.jpg",
+  "output_dir": "out/srcset",
+  "widths": [320, 640, 960, 1280, 1920],
+  "densities": [1.0, 2.0],
+  "format": "webp",
+  "quality": 85,
+  "generate_html": true,
+  "linear_rgb": true
+}

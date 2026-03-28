@@ -1,0 +1,14 @@
+{
+  "operation": "watermark",
+  "input": "photo.jpg",
+  "output": "watermarked.jpg",
+  "text": "© 2024 Example Inc.",
+  "position": "bottom-right",
+  "opacity": 0.7,
+  "font_size": 24,
+  "color": "#FFFFFF",
+  "offset_x": 20,
+  "offset_y": 20,
+  "format": "jpeg",
+  "quality": 85
+}
