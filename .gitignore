@@ -44,6 +44,8 @@ assets/*.webp
 *.jpeg
 *.webp
 *.ico
+
+!devpixelforge.png
 # Excepto si forman parte del proyecto (ej. README)
 !docs/**/*.png
 
