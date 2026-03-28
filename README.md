@@ -1,6 +1,12 @@
+<p align="center">
+  <img src="devpixelforge.png" width="300" alt="DevPixelForge">
+</p>
+
 # DevPixelForge (dpf)
 
 High-performance image processing engine in Rust, with Go client for MCP integration.
+
+**"Transform pixels at the speed of Rust."**
 
 ## Architecture
 
