@@ -2,380 +2,250 @@
   <img src="devpixelforge.png" width="300" alt="DevPixelForge">
 </p>
 
+<div align="center">
+
+![Rust](https://img.shields.io/badge/Rust-1.74+-dea584?style=flat-square&logo=rust&logoColor=white)
+![Go](https://img.shields.io/badge/Go-1.21+-00ADD8?style=flat-square&logo=go&logoColor=white)
+[![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue?style=flat-square)](https://www.gnu.org/licenses/gpl-3.0)
+![Platform](https://img.shields.io/badge/Platform-Linux%20%7C%20macOS%20%7C%20Windows-blue?style=flat-square)
+
+</div>
+
 # DevPixelForge (dpf)
 
-High-performance image processing engine in Rust, with Go client for MCP integration.
+High-performance multimedia processing engine in Rust with Go client for seamless integration.
 
 **"Transform pixels at the speed of Rust."**
 
-## Architecture
+---
+
+## What is DevPixelForge?
+
+DevPixelForge (dpf) is a **high-performance multimedia processing engine** that provides:
+
+| Category | Operations |
+|----------|------------|
+| **Images** | Resize, crop, rotate, watermark, adjust, optimize, convert, palette, favicon, sprite, placeholder, srcset, EXIF |
+| **Video** | Transcode, resize, trim, thumbnail, web profiles |
+| **Audio** | Transcode, trim, normalize (LUFS), silence removal |
+
+### Key Features
+
+- 🚀 **High Performance** — Rust-powered with parallel processing (Rayon)
+- 🔄 **Multiple Formats** — PNG, JPEG, WebP, GIF, SVG, ICO, AVIF, MP4, WebM, MP3, AAC, Opus
+- 📡 **Streaming Mode** — Persistent process for low-latency operations
+- 🔗 **Go Integration** — Native FFI bindings via StreamClient
+- 🎯 **Smart Operations** — Focal point cropping, auto-quality, entropy-based selection
+- 📦 **Static Binary** — musl-compiled for portability
+
+---
+
+## How It Works
 
 ```
 ┌─────────────────┐      JSON/stdio      ┌──────────────────┐
 │   Go Bridge     │◄────────────────────►│   dpf (Rust)     │
-│  (Client)       │   stdin/stdout       │  (Image Engine)  │
+│  (Client)       │   stdin/stdout       │  (Engine)       │
 └─────────────────┘                      └──────────────────┘
 ```
 
-## Operations
+1. **Send Job** — JSON job definition via stdin
+2. **Process** — Rust engine handles the operation
+3. **Receive Result** — JSON response via stdout
 
-| Operation | Description | CLI Example |
-|-----------|-------------|-------------|
-| `resize` | Resize to multiple widths or by percentage | `{"operation":"resize","input":"x.png","output_dir":"out","widths":[320,640]}` |
-| `resize` (%) | Scale by percentage | `{"operation":"resize","input":"x.png","output_dir":"out","scale_percent":50}` |
-| `optimize` | Lossless/lossy compression | `{"operation":"optimize","inputs":["x.png"],"level":"lossy"}` |
-| `convert` | Change format | `{"operation":"convert","input":"x.png","output":"x.webp","format":"webp"}` |
-| `palette` | Reduce color palette | `{"operation":"palette","input":"x.png","output_dir":"out","max_colors":32}` |
-| `favicon` | Generate multi-size favicons | `{"operation":"favicon","input":"logo.svg","output_dir":"out"}` |
-| `sprite` | Generate sprite sheet | `{"operation":"sprite","inputs":["a.png","b.png"],"output":"sprite.png"}` |
-| `placeholder` | LQIP, dominant color | `{"operation":"placeholder","input":"x.png","kind":"lqip"}` |
-| `crop` | Manual or smart crop (center, focal_point, entropy) | `{"operation":"crop","input":"x.png","output":"out.png","rect":{"x":0,"y":0,"width":100,"height":100}}` |
-| `rotate` | Rotate 90/180/270 or arbitrary angle, flip | `{"operation":"rotate","input":"x.png","output":"out.png","angle":90}` |
-| `watermark` | Text or image overlay with opacity | `{"operation":"watermark","input":"x.png","output":"out.png","text":"© 2024"}` |
-| `adjust` | Brightness, contrast, saturation, blur, sharpen | `{"operation":"adjust","input":"x.png","output":"out.png","brightness":0.2}` |
-| `quality` | Auto-quality optimization via binary search | `{"operation":"quality","input":"x.png","output":"out.jpg","target_size":10000,"format":"jpeg"}` |
-| `srcset` | Responsive image variants with HTML generation | `{"operation":"srcset","input":"x.png","output_dir":"out","widths":[320,640,1024]}` |
-| `exif` | Strip, preserve, extract, or auto-orient EXIF | `{"operation":"exif","input":"x.jpg","exif_op":"extract"}` |
-| `batch` | Multiple jobs in parallel | `{"operation":"batch","jobs":[...]}` |
+---
 
 ## Quick Start
 
+### Installation
+
 ```bash
-# Build
+# Clone and build
+git clone https://github.com/your-org/devpixelforge.git
+cd devpixelforge
 make build
 
 # Verify capabilities
 ./dpf/target/release/dpf caps
+```
 
-# Example resize
+### Basic Usage
+
+```bash
+# Single operation (one-shot)
 ./dpf/target/release/dpf process \
-  --job '{"operation":"resize","input":"img.png","output_dir":"out","widths":[320,640]}'
+  --job '{"operation":"resize","input":"image.png","output_dir":"out","widths":[320,640]}'
+
+# Batch processing
+./dpf/target/release/dpf batch --file jobs.json
 
 # Streaming mode (persistent process)
 ./dpf/target/release/dpf --stream
 ```
 
+---
+
 ## Usage Modes
 
-| Mode | Usage | Example |
-|------|-------|---------|
-| One-shot | Single operation | `dpf process --job '{...}'` |
-| Stdin | Pipes/scripts | `echo '{...}' | dpf` |
-| Streaming | Persistent process | `dpf --stream` |
-| Batch | Multiple parallel jobs | `dpf batch --file jobs.json` |
+| Mode | Command | Use Case |
+|------|---------|----------|
+| One-shot | `dpf process --job '{...}'` | Single operation |
+| Stdin | `echo '{...}' \| dpf` | Pipes and scripts |
+| Streaming | `dpf --stream` | Multiple operations, low latency |
+| Batch | `dpf batch --file jobs.json` | Parallel job processing |
 
-## Parameters by Operation
+### Streaming Mode Example
 
-### Resize
-```json
-{
-  "operation": "resize",
-  "input": "image.png",
-  "output_dir": "out",
-  "widths": [320, 640, 1024],
-  "scale_percent": null,
-  "max_height": null,
-  "format": "png",
-  "quality": 85,
-  "filter": "lanczos3",
-  "linear_rgb": false,
-  "inline": false
-}
+```bash
+# Start streaming process
+./dpf/target/release/dpf --stream
+
+# Send multiple jobs (one per line)
+{"operation":"resize","input":"a.png","output_dir":"out","widths":[320]}
+{"operation":"optimize","inputs":["b.png"],"output_dir":"out"}
+{"operation":"watermark","input":"c.png","output":"out/c.png","text":"© 2024"}
 ```
 
-### Crop
-```json
-{
-  "operation": "crop",
-  "input": "image.png",
-  "output": "cropped.png",
-  "rect": { "x": 100, "y": 100, "width": 200, "height": 200 },
-  "gravity": null,
-  "focal_x": null,
-  "focal_y": null,
-  "width": null,
-  "height": null,
-  "format": "png",
-  "quality": 85,
-  "inline": false
-}
-```
+---
 
-Gravity modes for smart crop:
-- `center` - Crop from center
-- `focal_point` - Crop around focal point (use `focal_x`, `focal_y` 0.0-1.0)
-- `entropy` - Crop region with highest brightness variance
+## Operations Reference
 
-### Rotate
-```json
-{
-  "operation": "rotate",
-  "input": "image.png",
-  "output": "rotated.png",
-  "angle": 90,
-  "angle_f": null,
-  "flip": null,
-  "auto_orient": false,
-  "background": "#FFFFFF",
-  "format": "png",
-  "quality": 85,
-  "inline": false
-}
-```
+### Image Operations
 
-- `angle`: 0, 90, 180, 270 degrees
-- `angle_f`: Arbitrary rotation (-360 to 360)
-- `flip`: "horizontal" or "vertical"
+| Operation | Description | Example |
+|-----------|-------------|---------|
+| `resize` | Resize to multiple widths | `{"widths":[320,640,1024]}` |
+| `crop` | Manual or smart crop | `{"gravity":"focal_point","focal_x":0.75}` |
+| `rotate` | Rotate/flip | `{"angle":90}` |
+| `watermark` | Text/image overlay | `{"text":"© 2024","position":"bottom-right"}` |
+| `adjust` | Brightness, contrast, blur | `{"brightness":0.2,"blur":2.0}` |
+| `quality` | Auto-quality optimization | `{"target_size":50000}` |
+| `srcset` | Responsive images + HTML | `{"widths":[320,640],"generate_html":true}` |
+| `exif` | Strip/extract EXIF | `{"exif_op":"strip","mode":"all"}` |
+| `optimize` | Lossless/lossy compression | `{"level":"lossless"}` |
+| `convert` | Format conversion | `{"format":"webp"}` |
+| `palette` | Color reduction | `{"max_colors":32,"dithering":0.5}` |
+| `favicon` | Multi-size favicons | `{"sizes":[16,32,180]}` |
+| `sprite` | Sprite sheets | `{"inputs":["a.png","b.png"],"columns":2}` |
+| `placeholder` | LQIP, dominant color | `{"kind":"lqip","width":20}` |
 
-### Watermark
-```json
-{
-  "operation": "watermark",
-  "input": "image.png",
-  "output": "watermarked.png",
-  "text": "© 2024",
-  "image": null,
-  "position": "bottom-right",
-  "opacity": 0.8,
-  "font_size": 24,
-  "color": "#FFFFFF",
-  "offset_x": 10,
-  "offset_y": 10,
-  "format": "png",
-  "quality": 85,
-  "inline": false
-}
-```
+### Video Operations
 
-Positions: `top-left`, `top-center`, `top-right`, `center-left`, `center`, `center-right`, `bottom-left`, `bottom-center`, `bottom-right`
+| Operation | Description | Example |
+|-----------|-------------|---------|
+| `transcode` | Codec conversion | `{"codec":"h264"}` |
+| `resize` | Scale video | `{"height":720}` |
+| `trim` | Cut by timestamps | `{"start":30,"end":90}` |
+| `thumbnail` | Extract frame | `{"timestamp":"25%"}` |
+| `profile` | Web-optimized | `{"profile":"web-mid"}` |
 
-### Adjust
-```json
-{
-  "operation": "adjust",
-  "input": "image.png",
-  "output": "adjusted.png",
-  "brightness": 0.2,
-  "contrast": -0.1,
-  "saturation": 0.5,
-  "blur": null,
-  "sharpen": null,
-  "linear_rgb": true,
-  "format": "png",
-  "quality": 85,
-  "inline": false
-}
-```
+### Audio Operations
 
-Ranges:
-- `brightness`, `contrast`, `saturation`: -1.0 to 1.0
-- `blur`: 0.0 to 50.0 (sigma)
-- `sharpen`: 0.0 to 10.0 (amount)
+| Operation | Description | Example |
+|-----------|-------------|---------|
+| `transcode` | Format conversion | `{"codec":"aac","bitrate":"192k"}` |
+| `trim` | Cut by timestamps | `{"start":0,"end":60}` |
+| `normalize` | LUFS normalization | `{"target_lufs":-14}` |
+| `silence_trim` | Remove silence | `{"threshold_db":-40}` |
 
-### Quality (Auto-Optimization)
-```json
-{
-  "operation": "quality",
-  "input": "image.png",
-  "output": "optimized.jpg",
-  "target_size": 10000,
-  "tolerance_percent": 5.0,
-  "max_iterations": 10,
-  "min_quality": 30,
-  "max_quality": 95,
-  "format": "jpeg",
-  "inline": false
-}
-```
+---
 
-### Srcset
-```json
-{
-  "operation": "srcset",
-  "input": "hero.jpg",
-  "output_dir": "out",
-  "widths": [320, 640, 960, 1280, 1920],
-  "densities": [1.0, 2.0],
-  "format": "webp",
-  "quality": 85,
-  "generate_html": true,
-  "linear_rgb": true
-}
-```
-
-### EXIF
-```json
-{
-  "operation": "exif",
-  "input": "photo.jpg",
-  "output": "cleaned.jpg",
-  "exif_op": "strip",
-  "mode": "all",
-  "keep": null,
-  "return_metadata": true,
-  "format": "jpeg",
-  "quality": 85,
-  "inline": false
-}
-```
-
-Operations:
-- `strip` - Remove EXIF data (modes: all, gps, thumbnail, camera)
-- `preserve` - Keep only specified tags
-- `extract` - Read and return EXIF metadata
-- `auto_orient` - Apply EXIF orientation transformation
-
-### Optimize
-```json
-{
-  "operation": "optimize",
-  "inputs": ["a.png", "b.jpg"],
-  "output_dir": "out",
-  "level": "lossless",
-  "quality": 80,
-  "also_webp": true
-}
-```
-
-### Palette
-```json
-{
-  "operation": "palette",
-  "input": "icon.png",
-  "output_dir": "out",
-  "max_colors": 32,
-  "dithering": 0.5,
-  "format": "png"
-}
-```
-
-## Structure
+## Project Structure
 
 ```
 devpixelforge/
-├── dpf/                    # Rust Engine
-│   └── src/operations/
-│       ├── resize.rs       # Resize (with % and linear RGB)
-│       ├── crop.rs         # Manual and smart crop
-│       ├── rotate.rs       # Rotation and flip
-│       ├── watermark.rs    # Text and image overlay
-│       ├── adjust.rs       # Brightness, contrast, blur, sharpen
-│       ├── quality.rs      # Auto-quality binary search
-│       ├── srcset.rs       # Responsive image variants
-│       ├── exif_ops.rs     # EXIF strip, preserve, extract
-│       ├── optimize.rs     # oxipng/mozjpeg compression
-│       ├── convert.rs      # Format conversion
-│       ├── palette.rs      # Palette reduction + dithering
-│       ├── favicon.rs      # Multi-size favicons
-│       ├── sprite.rs       # Sprite sheets
-│       └── placeholder.rs  # LQIP, dominant color
-├── go-bridge/
-│   └── dpf.go             # Go client + StreamClient
-├── docs/
-│   └── examples/          # JSON examples for each operation
+├── dpf/                           # Rust Engine
+│   └── src/
+│       ├── lib.rs                 # Main entry
+│       ├── cli.rs                 # CLI arguments
+│       ├── processor.rs            # Job processing
+│       └── operations/
+│           ├── image/              # 14 image operations
+│           ├── video/              # 5 video operations
+│           └── audio/              # 4 audio operations
+├── go-bridge/                     # Go FFI Bindings
+│   └── pkg/dpf/
+│       ├── client.go              # ProcessClient
+│       └── stream.go              # StreamClient
+├── docs/                          # Documentation
+│   ├── README.md                  # This file (index)
+│   ├── schema.md                  # JSON schema reference
+│   ├── examples.md                # Working examples
+│   └── testing/                   # Testing docs
 └── Makefile
 ```
 
-## Requirements
+---
 
-- **Rust** ≥ 1.74
-- **Go** ≥ 1.21 (for the bridge)
-- For static binary: `musl-tools` (Ubuntu/Debian)
+## Building
 
-## Video Processing
+### Requirements
 
-dpf supports video transcoding, resizing, trimming, and thumbnail extraction:
+| Dependency | Version | Purpose |
+|------------|---------|---------|
+| Rust | ≥ 1.74 | Core engine |
+| Go | ≥ 1.21 | FFI bridge |
+| musl-tools | (Debian/Ubuntu) | Static binary |
 
-```bash
-# Transcode to H.264
-dpf process --job '{"operation":"video","transcode":{"input":"video.mp4","output":"out.mp4","codec":"h264"}}'
-
-# Resize to 720p
-dpf process --job '{"operation":"video","resize":{"input":"video.mp4","output":"out.mp4","height":720}}'
-
-# Generate thumbnail
-dpf process --job '{"operation":"video","thumbnail":{"input":"video.mp4","output":"thumb.jpg","timestamp":"25%"}}'
-
-# Apply web profile (720p, 2.5M bitrate)
-dpf process --job '{"operation":"video","profile":{"input":"video.mp4","output":"out.mp4","profile":"web-mid"}}'
-```
-
-## Audio Processing
-
-Audio transcoding, trimming, normalization, and silence removal:
+### Build Commands
 
 ```bash
-# Transcode to AAC
-dpf process --job '{"operation":"audio","transcode":{"input":"audio.mp3","output":"out.aac","codec":"aac"}}'
+# Full build (Rust + Go)
+make build
 
-# Normalize loudness (YouTube standard: -14 LUFS)
-dpf process --job '{"operation":"audio","normalize":{"input":"audio.mp3","output":"out.mp3","target_lufs":-14}}'
+# Rust only
+make build-rust
 
-# Trim silence from start/end
-dpf process --job '{"operation":"audio","silence_trim":{"input":"audio.mp3","output":"out.mp3"}}'
+# Go only
+make build-go
+
+# Static binary (musl)
+make build-rust-static
 ```
 
-### Supported Formats
+---
 
-| Type | Input | Output |
-|------|-------|--------|
-| Video | mp4, webm, mkv, avi, mov | mp4, webm, mkv |
-| Audio | mp3, aac, ogg, wav, flac, opus | mp3, aac, ogg, wav |
+## Testing
 
-### Video Codecs
-H.264, VP8, VP9, AV1
+```bash
+# All tests
+make test
 
-### Audio Codecs
-MP3, AAC, Opus, Vorbis, FLAC, WAV
+# Rust tests
+cd dpf && cargo test
 
-### Video Profiles
-| Profile | Resolution | Bitrate |
-|---------|------------|---------|
-| web-low | 480p | 1M |
-| web-mid | 720p | 2.5M |
-| web-high | 1080p | 5M |
-
-## Features
-
-- ✅ Multi-format: PNG, JPEG, WebP, GIF, SVG, ICO, AVIF
-- ✅ Video processing: transcode, resize, trim, thumbnail, profile
-- ✅ Audio processing: transcode, trim, normalize (LUFS), silence trim
-- ✅ Video codecs: H.264, VP8, VP9, AV1
-- ✅ Audio codecs: MP3, AAC, Opus, Vorbis, FLAC, WAV
-- ✅ Parallel processing with rayon
-- ✅ Streaming mode (persistent process)
-- ✅ Palette reduction with dithering
-- ✅ Resize by percentage and linear RGB
-- ✅ Lossless/lossy optimization
-- ✅ SVG→raster via resvg
-- ✅ Smart crop (center, focal point, entropy)
-- ✅ Text and image watermarks with opacity
-- ✅ Brightness/contrast/saturation adjustments
-- ✅ Gaussian blur and sharpen
-- ✅ Auto-quality optimization via binary search
-- ✅ Srcset generation with HTML output
-- ✅ EXIF metadata handling
-
-## Test Coverage
+# Go tests
+cd go-bridge && go test -v
+```
 
 | Component | Tests |
 |-----------|-------|
-| Operations (Rust) | 280+ |
-| Integration Tests | 20+ |
+| Rust Operations | 280+ |
+| Integration | 20+ |
 | Go Bridge | 16+ |
+| **Total** | **316+** |
 
-Run tests:
-```bash
-# Rust
-cargo test
+---
 
-# Go
-go test ./...
+## Documentation
 
-# Full verification
-make test
-```
+| Document | Description |
+|----------|-------------|
+| [📖 Main Docs](docs/README.md) | Complete project documentation |
+| [📋 JSON Schema](docs/schema.md) | Full JSON protocol reference |
+| [💡 Examples](docs/examples.md) | Working examples for all operations |
+| [🧪 Testing](docs/testing/README.md) | Testing architecture and guides |
+
+---
 
 ## License
 
-MIT - Ing. Gustavo Gutiérrez
+GNU General Public License v3.0 (GPL-3.0)
+
+Copyright (c) 2024 Ing. Gustavo Gutiérrez
+
+This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along with this program. If not, see <https://www.gnu.org/licenses/>.
