@@ -1,9 +1,10 @@
 [package]
 name = "dpf"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 description = "DevPixelForge - High-performance media (images, videos, audio) processing engine"
 authors = ["Ing. Gustavo Gutiérrez"]
+license = "GPL-3.0-only"
 
 [[bin]]
 name = "dpf"
