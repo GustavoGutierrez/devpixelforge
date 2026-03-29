@@ -1,0 +1,162 @@
+name: Build
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+
+jobs:
+  # ─── Linux AMD64 (musl static) ────────────────────────────────
+  build-linux:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install musl target
+        run: rustup target add x86_64-unknown-linux-musl
+
+      - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/registry
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Cache cargo index
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/git
+          key: ${{ runner.os }}-cargo-index-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Cache cargo build
+        uses: actions/cache@v4
+        with:
+          path: dpf/target
+          key: ${{ runner.os }}-x86_64-unknown-linux-musl-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-x86_64-unknown-linux-musl-
+
+      - name: Build Linux static binary
+        run: |
+          cd dpf
+          cargo build --release --target x86_64-unknown-linux-musl
+          strip target/x86_64-unknown-linux-musl/release/dpf
+
+      - name: Upload Linux artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dpf-linux-amd64
+          path: dpf/target/x86_64-unknown-linux-musl/release/dpf
+          compression-level: 0
+
+  # ─── macOS ARM64 (Apple Silicon) ──────────────────────────────
+  build-macos-arm64:
+    runs-on: macos-latest
+    strategy:
+      fail-fast: false
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Homebrew dependencies
+        run: brew install ffmpeg
+
+      - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/registry
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Cache cargo index
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/git
+          key: ${{ runner.os }}-cargo-index-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Cache cargo build
+        uses: actions/cache@v4
+        with:
+          path: dpf/target
+          key: ${{ runner.os }}-arm64-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-arm64-
+
+      - name: Build macOS ARM64 binary
+        run: |
+          cd dpf
+          cargo build --release
+          strip target/release/dpf
+
+      - name: Upload macOS ARM64 artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dpf-macos-arm64
+          path: dpf/target/release/dpf
+          compression-level: 0
+
+  # ─── macOS Intel (x86_64) ─────────────────────────────────────
+  build-macos-intel:
+    runs-on: macos-12
+    strategy:
+      fail-fast: false
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Homebrew dependencies
+        run: brew install ffmpeg
+
+      - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/registry
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Cache cargo index
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/git
+          key: ${{ runner.os }}-cargo-index-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Cache cargo build
+        uses: actions/cache@v4
+        with:
+          path: dpf/target
+          key: ${{ runner.os }}-x86_64-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-x86_64-
+
+      - name: Build macOS Intel binary
+        run: |
+          cd dpf
+          cargo build --release
+          strip target/release/dpf
+
+      - name: Upload macOS Intel artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dpf-macos-intel
+          path: dpf/target/release/dpf
+          compression-level: 0
+
+  # ─── Verify all builds ─────────────────────────────────────────
+  verify:
+    needs: [build-linux, build-macos-arm64, build-macos-intel]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: List artifacts
+        run: |
+          echo "=== Build Artifacts ==="
+          find artifacts -type f -name "dpf" -exec ls -lh {} \;
