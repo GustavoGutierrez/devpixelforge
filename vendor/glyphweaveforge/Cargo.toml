@@ -13,7 +13,7 @@
 edition = "2024"
 rust-version = "1.85"
 name = "glyphweaveforge"
-version = "0.1.1"
+version = "0.1.2"
 build = false
 include = [
     "/Cargo.toml",

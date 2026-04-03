@@ -51,3 +51,19 @@ fn footnote_math_and_code_fallbacks_remain_visible() {
     assert!(text.contains("[code:rust]"));
     assert!(text.contains("fn main"));
 }
+
+#[test]
+fn typst_escape_regressions_remain_renderable_for_code_heavy_markdown() {
+    let markdown = "# include/vector\n\nUse *ptr < len / 2>* inside code like `Vec<String>` and path `/tmp/example`.";
+    let result = Forge::new()
+        .from_text(markdown)
+        .to_memory()
+        .convert()
+        .expect("conversion should succeed");
+
+    let text = pdf_text(&result.bytes.expect("bytes should exist"));
+    assert!(text.contains("include/vector"));
+    assert!(text.contains("ptr < len / 2>"));
+    assert!(text.contains("Vec<String>"));
+    assert!(text.contains("/tmp/example"));
+}
