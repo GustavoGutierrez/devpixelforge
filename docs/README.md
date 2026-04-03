@@ -25,6 +25,7 @@ DevPixelForge is a **high-performance multimedia processing engine** written in 
 | Category | Operations |
 |----------|------------|
 | **Images** | resize, crop, rotate, watermark, adjust, optimize, convert, palette, favicon, sprite, placeholder, srcset, EXIF |
+| **Documents** | markdown_to_pdf (GlyphWeaveForge + Typst) |
 | **Video** | transcode, resize, trim, thumbnail, web profiles |
 | **Audio** | transcode, trim, normalize (LUFS), silence trim |
 
@@ -36,6 +37,7 @@ DevPixelForge is a **high-performance multimedia processing engine** written in 
 | **High Performance** | Rust-powered with parallel processing via Rayon |
 | **Streaming Mode** | Persistent process for low-latency operations |
 | **FFI Bridge** | Native Go bindings for seamless integration |
+| **Document Rendering** | Markdown-to-PDF conversion with built-in GlyphWeaveForge themes |
 | **Smart Operations** | Focal point cropping, auto-quality optimization, entropy-based selection |
 | **Static Binary** | musl-compiled binary for portability |
 
@@ -66,6 +68,10 @@ make build
 # Example resize
 ./dpf/target/release/dpf process \
   --job '{"operation":"resize","input":"image.png","output_dir":"out","widths":[320,640]}'
+
+# Example markdown to PDF
+./dpf/target/release/dpf process \
+  --job '{"operation":"markdown_to_pdf","input":"README.md","output":"out/readme.pdf","theme":"engineering"}'
 ```
 
 ---
@@ -78,6 +84,13 @@ make build
 | `dpf process --job <json>` | Execute single operation |
 | `dpf batch --file <path>` | Process batch from JSON file |
 | `dpf --stream` | Start streaming mode |
+
+### Markdown-to-PDF Notes
+
+- Provide exactly one input source: `input`, `markdown_text`, or `markdown_base64`.
+- Provide at least one output mode: `output`, `output_dir`, or `inline=true`.
+- Use a built-in GlyphWeaveForge theme such as `engineering` for technical documents.
+- See [`validation/markdown-to-pdf/README.md`](validation/markdown-to-pdf/README.md) for repository-backed validation and reproduction commands.
 
 ---
 
@@ -149,6 +162,7 @@ make test
 | [📋 JSON Schema](schema.md) | Full JSON protocol reference |
 | [💡 Examples](examples.md) | Working examples for all operations |
 | [🧪 Testing](testing/README.md) | Testing architecture and guides |
+| [✅ Markdown-to-PDF Validation](validation/markdown-to-pdf/README.md) | Reproducible CLI validation steps and generated PDFs |
 
 ---
 

@@ -315,14 +315,6 @@ mod tests {
     use super::*;
     use tempfile::TempDir;
 
-    fn fixtures_dir() -> String {
-        concat!(env!("CARGO_MANIFEST_DIR"), "/test_fixtures").to_string()
-    }
-
-    fn fixture_path(name: &str) -> String {
-        format!("{}/{}", fixtures_dir(), name)
-    }
-
     fn create_test_image(width: u32, height: u32) -> image::DynamicImage {
         let mut img = image::RgbImage::new(width, height);
         for y in 0..height {
@@ -360,7 +352,6 @@ mod tests {
     #[test]
     fn test_min_quality_greater_than_max() {
         let temp_dir = TempDir::new().unwrap();
-        let input_path = format!("{}/test_input.jpg", temp_dir.path().to_str().unwrap());
         let output_path = format!("{}/output.jpg", temp_dir.path().to_str().unwrap());
 
         let img = create_test_image(100, 100);

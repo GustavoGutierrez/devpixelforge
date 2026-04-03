@@ -282,14 +282,6 @@ mod tests {
     use image::DynamicImage;
     use tempfile::TempDir;
 
-    fn fixtures_dir() -> String {
-        concat!(env!("CARGO_MANIFEST_DIR"), "/test_fixtures").to_string()
-    }
-
-    fn fixture_path(name: &str) -> String {
-        format!("{}/{}", fixtures_dir(), name)
-    }
-
     fn create_test_image(width: u32, height: u32) -> DynamicImage {
         let mut img = image::RgbImage::new(width, height);
         for y in 0..height {

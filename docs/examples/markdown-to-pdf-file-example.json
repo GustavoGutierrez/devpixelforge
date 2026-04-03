@@ -1,0 +1,8 @@
+{
+  "operation": "markdown_to_pdf",
+  "input": "docs/report.md",
+  "output": "/tmp/report.pdf",
+  "page_size": "letter",
+  "layout_mode": "paged",
+  "theme": "engineering"
+}

@@ -51,6 +51,7 @@ assets/*.webp
 
 # ─── PDFs generados ─────────────────────────────────────────────
 *.pdf
+!docs/validation/markdown-to-pdf/*.pdf
 
 # ─── Sistema operativo ──────────────────────────────────────────
 .DS_Store

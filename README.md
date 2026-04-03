@@ -26,6 +26,7 @@ DevPixelForge (dpf) is a **high-performance multimedia processing engine** that 
 | Category | Operations |
 |----------|------------|
 | **Images** | Resize, crop, rotate, watermark, adjust, optimize, convert, palette, favicon, sprite, placeholder, srcset, EXIF |
+| **Documents** | Markdown to PDF (GlyphWeaveForge + Typst) |
 | **Video** | Transcode, resize, trim, thumbnail, web profiles |
 | **Audio** | Transcode, trim, normalize (LUFS), silence removal |
 
@@ -35,8 +36,16 @@ DevPixelForge (dpf) is a **high-performance multimedia processing engine** that 
 - 🔄 **Multiple Formats** — PNG, JPEG, WebP, GIF, SVG, ICO, AVIF, MP4, WebM, MP3, AAC, Opus
 - 📡 **Streaming Mode** — Persistent process for low-latency operations
 - 🔗 **Go Integration** — Native FFI bindings via StreamClient
+- 📄 **Markdown to PDF** — Typst-backed document rendering for file and inline flows
 - 🎯 **Smart Operations** — Focal point cropping, auto-quality, entropy-based selection
 - 📦 **Static Binary** — musl-compiled for portability
+
+### Markdown-to-PDF Highlights
+
+- Uses GlyphWeaveForge with the Typst backend selected explicitly.
+- Supports file input, inline text, or base64-encoded Markdown.
+- Supports file output, directory output, and inline base64 PDF responses.
+- Supports built-in GlyphWeaveForge themes including `engineering`, `professional`, `invoice`, `scientific_article`, and `informational`.
 
 ---
 
@@ -78,6 +87,10 @@ make build
 
 # Batch processing
 ./dpf/target/release/dpf batch --file jobs.json
+
+# Markdown to PDF
+./dpf/target/release/dpf process \
+  --job '{"operation":"markdown_to_pdf","markdown_text":"# Hello\n\nPDF","inline":true}'
 
 # Streaming mode (persistent process)
 ./dpf/target/release/dpf --stream
@@ -128,6 +141,35 @@ make build
 | `favicon` | Multi-size favicons | `{"sizes":[16,32,180]}` |
 | `sprite` | Sprite sheets | `{"inputs":["a.png","b.png"],"columns":2}` |
 | `placeholder` | LQIP, dominant color | `{"kind":"lqip","width":20}` |
+| `markdown_to_pdf` | Render Markdown as PDF | `{"markdown_text":"# Report","inline":true}` |
+
+### Document Operation
+
+`markdown_to_pdf` accepts exactly one source from `input`, `markdown_text`, or `markdown_base64` and at least one output mode from `output`, `output_dir`, or `inline`.
+
+- File input + `output` / `output_dir` keeps filesystem-relative asset resolution.
+- Inline input + `inline=true` returns base64 PDF bytes in `outputs[0].data_base64`.
+- Inline input + `output_dir` requires `file_name`.
+
+Example:
+
+```json
+{
+  "operation": "markdown_to_pdf",
+  "markdown_text": "# Report\n\nRendered by Typst.",
+  "inline": true,
+  "theme": "professional"
+}
+```
+
+### CLI Validation Artifacts
+
+The repository includes a reproducible CLI validation guide and generated sample PDFs for this feature:
+
+- Guide: [`docs/validation/markdown-to-pdf/README.md`](docs/validation/markdown-to-pdf/README.md)
+- Generated PDFs:
+  - [`docs/validation/markdown-to-pdf/readme.pdf`](docs/validation/markdown-to-pdf/readme.pdf)
+  - [`docs/validation/markdown-to-pdf/agents.pdf`](docs/validation/markdown-to-pdf/agents.pdf)
 
 ### Video Operations
 
@@ -235,6 +277,7 @@ cd go-bridge && go test -v
 | [📋 JSON Schema](docs/schema.md) | Full JSON protocol reference |
 | [💡 Examples](docs/examples.md) | Working examples for all operations |
 | [🧪 Testing](docs/testing/README.md) | Testing architecture and guides |
+| [✅ Markdown-to-PDF Validation](docs/validation/markdown-to-pdf/README.md) | Reproduction steps and committed validation artifacts |
 
 ---
 

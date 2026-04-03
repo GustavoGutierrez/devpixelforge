@@ -2,8 +2,8 @@ use anyhow::Result;
 use rayon::prelude::*;
 
 use crate::operations::{
-    adjust, audio, convert, crop, exif_ops, favicon, optimize, palette, placeholder, quality,
-    resize, rotate, sprite, srcset, video, watermark,
+    adjust, audio, convert, crop, exif_ops, favicon, markdown_to_pdf, optimize, palette,
+    placeholder, quality, resize, rotate, sprite, srcset, video, watermark,
 };
 use crate::{AudioJob, ImageJob, JobResult, VideoJob};
 
@@ -26,6 +26,7 @@ pub fn execute(job: ImageJob) -> Result<JobResult> {
         ImageJob::Quality(params) => quality::execute(params),
         ImageJob::Srcset(params) => srcset::execute(params),
         ImageJob::Exif(params) => exif_ops::execute(params),
+        ImageJob::MarkdownToPdf(params) => markdown_to_pdf::execute(params),
         ImageJob::Video(vjob) => execute_video_job(vjob),
         ImageJob::Audio(ajob) => execute_audio_job(ajob),
         ImageJob::Batch(batch) => {

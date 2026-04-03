@@ -5,6 +5,7 @@ pub mod convert;
 pub mod crop;
 pub mod exif_ops;
 pub mod favicon;
+pub mod markdown_to_pdf;
 pub mod optimize;
 pub mod palette;
 pub mod placeholder;

@@ -290,14 +290,6 @@ mod tests {
     use image::Rgba;
     use tempfile::TempDir;
 
-    fn fixtures_dir() -> String {
-        concat!(env!("CARGO_MANIFEST_DIR"), "/test_fixtures").to_string()
-    }
-
-    fn fixture_path(name: &str) -> String {
-        format!("{}/{}", fixtures_dir(), name)
-    }
-
     fn create_test_image(width: u32, height: u32) -> DynamicImage {
         // Create a simple gradient image for testing
         let mut img = image::RgbaImage::new(width, height);
@@ -768,7 +760,7 @@ mod tests {
         assert_eq!(h, 100);
 
         // Test with odd dimensions
-        let (x, y, w, h) = crop_center(201, 201, 100, 100);
+        let (x, y, _w, _h) = crop_center(201, 201, 100, 100);
         assert_eq!(x, 50); // (201-100)/2 = 50.5, truncated to 50
         assert_eq!(y, 50);
     }
@@ -783,12 +775,12 @@ mod tests {
         assert_eq!(h, 100);
 
         // Test with focal point at top-left
-        let (x, y, w, h) = crop_focal_point(200, 200, 100, 100, 0.0, 0.0);
+        let (x, y, _w, _h) = crop_focal_point(200, 200, 100, 100, 0.0, 0.0);
         assert_eq!(x, 0); // Clamped to edge
         assert_eq!(y, 0);
 
         // Test with focal point at bottom-right
-        let (x, y, w, h) = crop_focal_point(200, 200, 100, 100, 1.0, 1.0);
+        let (x, y, _w, _h) = crop_focal_point(200, 200, 100, 100, 1.0, 1.0);
         assert_eq!(x, 100); // 200 - 100
         assert_eq!(y, 100);
     }

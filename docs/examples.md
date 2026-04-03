@@ -6,6 +6,52 @@ Working JSON examples for all DevPixelForge operations.
 
 ## Image Operations
 
+## Document Operations
+
+### Markdown to PDF
+
+**Markdown file to PDF file:**
+```json
+{
+  "operation": "markdown_to_pdf",
+  "input": "docs/report.md",
+  "output": "/tmp/report.pdf",
+  "page_size": "letter",
+  "layout_mode": "paged",
+  "theme": "engineering"
+}
+```
+
+**Inline Markdown to inline PDF:**
+```json
+{
+  "operation": "markdown_to_pdf",
+  "markdown_text": "# Inline Report\n\nRendered from memory.",
+  "inline": true,
+  "theme": "professional",
+  "theme_config": {
+    "margin_mm": 14.0
+  }
+}
+```
+
+**Inline Markdown to output directory:**
+```json
+{
+  "operation": "markdown_to_pdf",
+  "markdown_base64": "IyBSZXBvcnQKClJlbmRlcmVkIGZyb20gYmFzZTY0Lg==",
+  "output_dir": "/tmp/reports",
+  "file_name": "report.pdf",
+  "theme": "invoice"
+}
+```
+
+The operation accepts exactly one source from `input`, `markdown_text`, or `markdown_base64`. At least one output mode is required: `output`, `output_dir`, or `inline=true`.
+
+For a real repository validation flow that converts `README.md` and `AGENTS.md` into PDFs with the built-in `engineering` theme, see [`validation/markdown-to-pdf/README.md`](validation/markdown-to-pdf/README.md).
+
+---
+
 ### Resize
 
 **Resize to multiple widths:**

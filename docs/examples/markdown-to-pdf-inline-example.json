@@ -1,0 +1,11 @@
+{
+  "operation": "markdown_to_pdf",
+  "markdown_text": "# Inline Report\n\nRendered directly from memory.",
+  "inline": true,
+  "output_dir": "/tmp/reports",
+  "file_name": "inline-report.pdf",
+  "theme": "professional",
+  "theme_config": {
+    "margin_mm": 14.0
+  }
+}

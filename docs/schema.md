@@ -20,8 +20,9 @@ Complete reference for the JSON protocol used by dpf for image processing operat
 14. [FaviconParams](#faviconparams)
 15. [SpriteParams](#spriteparams)
 16. [PlaceholderParams](#placeholderparams)
-17. [BatchParams](#batchparams)
-18. [JobError](#joberror)
+17. [MarkdownToPdfParams](#markdowntopdfparams)
+18. [BatchParams](#batchparams)
+19. [JobError](#joberror)
 
 ---
 
@@ -60,10 +61,67 @@ Top-level job object. The `operation` field determines which params struct is us
 
 ```json
 {
-  "operation": "resize|crop|rotate|watermark|adjust|quality|srcset|exif|optimize|convert|palette|favicon|sprite|placeholder|batch",
+  "operation": "resize|crop|rotate|watermark|adjust|quality|srcset|exif|optimize|convert|palette|favicon|sprite|placeholder|markdown_to_pdf|batch",
   ...
 }
 ```
+
+---
+
+## MarkdownToPdfParams
+
+Render Markdown into PDF through GlyphWeaveForge with the Typst backend selected explicitly.
+
+```json
+{
+  "operation": "markdown_to_pdf",
+  "input": "docs/report.md",
+  "markdown_text": "# Report",
+  "markdown_base64": "IyBSZXBvcnQ=",
+  "output": "/tmp/report.pdf",
+  "output_dir": "/tmp/reports",
+  "file_name": "report.pdf",
+  "inline": false,
+  "page_size": "a4",
+  "page_width_mm": null,
+  "page_height_mm": null,
+  "layout_mode": "paged",
+  "theme": "professional",
+  "theme_config": {
+    "margin_mm": 14.0
+  }
+}
+```
+
+### Fields
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `input` | String | No* | Markdown file path. Preserves relative asset lookup. |
+| `markdown_text` | String | No* | Inline UTF-8 Markdown source. |
+| `markdown_base64` | String | No* | Base64-encoded UTF-8 Markdown source. |
+| `output` | String | No** | Explicit output PDF path. |
+| `output_dir` | String | No** | Directory output mode. Uses the source stem for file inputs. |
+| `file_name` | String | No | Optional PDF file name override for `output_dir`. Required for inline inputs with `output_dir`. |
+| `inline` | bool | No | Include base64 PDF bytes in `outputs[*].data_base64`. |
+| `page_size` | String | No | `a4`, `letter`, or `legal`. Ignored when custom dimensions are provided. |
+| `page_width_mm` | Number | No*** | Custom page width in millimeters. |
+| `page_height_mm` | Number | No*** | Custom page height in millimeters. |
+| `layout_mode` | String | No | `paged` or `single_page`. |
+| `theme` | String | No | `professional`, `engineering`, `invoice`, `scientific_article`, or `informational`. |
+| `theme_config` | Object | No | JSON overrides forwarded to GlyphWeaveForge `ThemeConfig`. |
+
+\* Exactly one of `input`, `markdown_text`, or `markdown_base64` is required.
+
+\** At least one of `output`, `output_dir`, or `inline=true` is required.
+
+\*** Custom page size requires both dimensions and they must be positive.
+
+### Response Notes
+
+- File outputs use `format="pdf"`, `width=0`, and `height=0`.
+- Inline outputs place base64 PDF bytes in `outputs[*].data_base64`.
+- `metadata.backend` is always `"typst"` for this operation.
 
 ---
 

@@ -10,45 +10,78 @@ import (
 	"time"
 )
 
-// getBinaryPath retorna la ruta al binario dpf para tests
+// getBinaryPath returns the path to the dpf test binary.
 func getBinaryPath() string {
-	// Buscar en el directorio del proyecto
-	_, filename, _, _ := runtime.Caller(0)
-	dir := filepath.Dir(filename)
+	repoRoot := getRepoRoot()
 
-	// Subir al directorio raíz del proyecto y buscar el binario
-	binaryPath := filepath.Join(dir, "..", "..", "dpf", "target", "debug", "dpf")
+	binaryPath := filepath.Join(repoRoot, "dpf", "target", "debug", "dpf")
 
-	// Si no existe en debug, intentar con release
 	if _, err := os.Stat(binaryPath); os.IsNotExist(err) {
-		binaryPath = filepath.Join(dir, "..", "..", "dpf", "target", "release", "dpf")
+		binaryPath = filepath.Join(repoRoot, "dpf", "target", "release", "dpf")
 	}
 
 	return binaryPath
 }
 
-// getFixturesDir retorna la ruta al directorio de fixtures
+// getFixturesDir returns the path to the test fixtures directory.
 func getFixturesDir() string {
-	_, filename, _, _ := runtime.Caller(0)
-	dir := filepath.Dir(filename)
-	return filepath.Join(dir, "..", "..", "dpf", "test_fixtures")
+	return filepath.Join(getRepoRoot(), "dpf", "test_fixtures")
 }
 
-// getFixturePath retorna la ruta a un archivo de fixture
+// getFixturePath returns the path to a fixture file.
 func getFixturePath(name string) string {
 	return filepath.Join(getFixturesDir(), name)
 }
 
-// setupBinary compila el binario si es necesario
+// setupBinary returns the path to the compiled test binary.
 func setupBinary(t *testing.T) string {
 	binaryPath := getBinaryPath()
 
-	// Verificar si el binario existe
 	if _, err := os.Stat(binaryPath); os.IsNotExist(err) {
 		t.Skip("Binary not found. Run 'cargo build' in dpf/ directory first")
 	}
 
 	return binaryPath
+}
+
+func getRepoRoot() string {
+	_, filename, _, _ := runtime.Caller(0)
+	dir := filepath.Dir(filename)
+	return filepath.Clean(filepath.Join(dir, ".."))
+}
+
+func TestGetBinaryPathUsesRepoRoot(t *testing.T) {
+	_, filename, _, _ := runtime.Caller(0)
+	dir := filepath.Dir(filename)
+	repoRoot := filepath.Clean(filepath.Join(dir, ".."))
+
+	expected := filepath.Join(repoRoot, "dpf", "target", "debug", "dpf")
+	if _, err := os.Stat(expected); os.IsNotExist(err) {
+		expected = filepath.Join(repoRoot, "dpf", "target", "release", "dpf")
+	}
+
+	if got := filepath.Clean(getBinaryPath()); got != expected {
+		t.Fatalf("expected binary path %q, got %q", expected, got)
+	}
+
+	if _, err := os.Stat(expected); err != nil {
+		t.Fatalf("expected resolved binary path to exist: %v", err)
+	}
+}
+
+func TestGetFixturesDirUsesRepoRoot(t *testing.T) {
+	_, filename, _, _ := runtime.Caller(0)
+	dir := filepath.Dir(filename)
+	repoRoot := filepath.Clean(filepath.Join(dir, ".."))
+	expected := filepath.Join(repoRoot, "dpf", "test_fixtures")
+
+	if got := filepath.Clean(getFixturesDir()); got != expected {
+		t.Fatalf("expected fixtures dir %q, got %q", expected, got)
+	}
+
+	if _, err := os.Stat(filepath.Join(expected, "sample.md")); err != nil {
+		t.Fatalf("expected sample markdown fixture to exist: %v", err)
+	}
 }
 
 // ============================================================================

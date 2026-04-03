@@ -22,10 +22,10 @@ pub mod pipeline;
 use audio::{AudioNormalizeParams, AudioSilenceTrimParams, AudioTranscodeParams, AudioTrimParams};
 use operations::{
     adjust::AdjustParams, audio, batch::BatchJob, convert::ConvertParams, crop::CropParams,
-    exif_ops::ExifParams, favicon::FaviconParams, optimize::OptimizeParams, palette::PaletteParams,
-    placeholder::PlaceholderParams, quality::QualityParams, resize::ResizeParams,
-    rotate::RotateParams, sprite::SpriteParams, srcset::SrcsetParams, video,
-    watermark::WatermarkParams,
+    exif_ops::ExifParams, favicon::FaviconParams, markdown_to_pdf::MarkdownToPdfParams,
+    optimize::OptimizeParams, palette::PaletteParams, placeholder::PlaceholderParams,
+    quality::QualityParams, resize::ResizeParams, rotate::RotateParams, sprite::SpriteParams,
+    srcset::SrcsetParams, video, watermark::WatermarkParams,
 };
 
 // ─── CLI Interface ───────────────────────────────────────────────
@@ -129,6 +129,8 @@ pub enum ImageJob {
     Srcset(SrcsetParams),
     /// EXIF operations (strip, preserve, extract, auto_orient)
     Exif(ExifParams),
+    /// Convert Markdown into PDF using the Typst renderer backend
+    MarkdownToPdf(MarkdownToPdfParams),
     /// Video processing operations
     Video(VideoJob),
     /// Audio processing operations
@@ -274,6 +276,7 @@ fn print_capabilities() {
         "operations": [
             "resize", "optimize", "convert", "crop", "rotate", "watermark", "adjust",
             "favicon", "sprite", "placeholder", "palette", "quality", "srcset", "exif",
+            "markdown_to_pdf",
             "video_transcode", "video_resize", "video_trim", "video_thumbnail",
             "video_profile", "video_metadata",
             "audio_transcode", "audio_trim", "audio_normalize", "audio_silence_trim",
@@ -287,7 +290,8 @@ fn print_capabilities() {
         "output_formats": {
             "image": ["png", "jpeg", "webp", "ico", "avif", "gif"],
             "video": ["mp4", "webm", "mkv", "avi", "mov"],
-            "audio": ["mp3", "aac", "ogg", "wav", "flac", "opus"]
+            "audio": ["mp3", "aac", "ogg", "wav", "flac", "opus"],
+            "document": ["pdf"]
         },
         "video_profiles": ["web-low", "web-mid", "web-high"],
         "video_codecs": ["h264", "vp8", "vp9", "av1"],
@@ -337,7 +341,10 @@ fn print_capabilities() {
             "audio_transcode": true,
             "audio_trim": true,
             "audio_normalize": true,
-            "audio_silence_trim": true
+            "audio_silence_trim": true,
+            "markdown_to_pdf": true,
+            "markdown_to_pdf_typst": true,
+            "pdf_inline_output": true
         },
         "threads": rayon::current_num_threads()
     });
@@ -361,6 +368,7 @@ impl ImageJob {
             ImageJob::Quality(_) => "quality",
             ImageJob::Srcset(_) => "srcset",
             ImageJob::Exif(_) => "exif",
+            ImageJob::MarkdownToPdf(_) => "markdown_to_pdf",
             ImageJob::Video(v) => match v {
                 VideoJob::Transcode(_) => "video_transcode",
                 VideoJob::Resize(_) => "video_resize",

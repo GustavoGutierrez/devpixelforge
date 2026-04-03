@@ -328,6 +328,14 @@ func (c *Client) Exif(ctx context.Context, job *ExifJob) (*JobResult, error) {
 	return c.Execute(ctx, job)
 }
 
+// MarkdownToPDF converts Markdown into PDF using the Rust Typst-backed renderer.
+func (c *Client) MarkdownToPDF(ctx context.Context, job *MarkdownToPDFJob) (*JobResult, error) {
+	if job.Operation == "" {
+		job.Operation = "markdown_to_pdf"
+	}
+	return c.Execute(ctx, job)
+}
+
 // ─── Video Operations ──────────────────────────────────────────────
 
 func (c *Client) VideoTranscode(ctx context.Context, job *VideoTranscodeJob) (*JobResult, error) {
@@ -530,6 +538,14 @@ func (sc *StreamClient) Exif(job *ExifJob) (*JobResult, error) {
 		job.Operation = "exif"
 	}
 	// Use ExifOp field, the JSON tag maps to "exif_op"
+	return sc.Execute(job)
+}
+
+// MarkdownToPDF converts Markdown into PDF using the persistent stream client.
+func (sc *StreamClient) MarkdownToPDF(job *MarkdownToPDFJob) (*JobResult, error) {
+	if job.Operation == "" {
+		job.Operation = "markdown_to_pdf"
+	}
 	return sc.Execute(job)
 }
 

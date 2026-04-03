@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-04-02
+
+### Added
+
+- Added `markdown_to_pdf` to the Rust JSON/CLI protocol with GlyphWeaveForge `0.1.1` and explicit Typst rendering.
+- Added Go bridge support for `MarkdownToPDFJob`, `Client.MarkdownToPDF`, and `StreamClient.MarkdownToPDF`.
+- Added Markdown-to-PDF integration tests, examples, schema docs, and inline/file usage guidance.
+- Added repository-backed Markdown-to-PDF CLI validation docs plus generated `README.md` and `AGENTS.md` PDF artifacts using the built-in `engineering` theme.
+
 ## [0.2.0] - 2026-03-28
 
 ### Documentation

@@ -20,6 +20,7 @@ cp devpixelforge/dpf/target/x86_64-unknown-linux-musl/release/dpf ./bin/dpf
 
 # Copy Go client files
 cp devpixelforge/go-bridge/dpf.go ./internal/dpf/
+cp devpixelforge/go-bridge/markdown_to_pdf_job.go ./internal/dpf/
 cp devpixelforge/go-bridge/video_job.go ./internal/dpf/
 cp devifforge/go-bridge/audio_job.go ./internal/dpf/
 ```
@@ -33,6 +34,7 @@ your-project/
 ├── internal/
 │   └── dpf/
 │       ├── dpf.go             # Main client
+│       ├── markdown_to_pdf_job.go
 │       ├── video_job.go       # Video types
 │       └── audio_job.go       # Audio types
 └── main.go
@@ -76,7 +78,51 @@ func main() {
 
 ---
 
-## 3. Video Operations
+## 3. Markdown to PDF
+
+Use `MarkdownToPDF` when an MCP server needs deterministic PDF output while keeping the existing `JobResult` envelope.
+
+### Inline Markdown to inline PDF
+
+```go
+markdown := "# MCP Report\n\nGenerated directly from memory."
+
+result, err := client.MarkdownToPDF(ctx, &dpf.MarkdownToPDFJob{
+    MarkdownText: &markdown,
+    Inline:       true,
+    Theme:        func(s string) *string { return &s }("professional"),
+})
+if err != nil {
+    log.Fatal(err)
+}
+
+// result.Outputs[0].DataBase64 contains the PDF bytes.
+```
+
+### Markdown file to PDF file
+
+```go
+result, err := client.MarkdownToPDF(ctx, &dpf.MarkdownToPDFJob{
+    Input:    "docs/report.md",
+    Output:   "/tmp/report.pdf",
+    PageSize: func(s string) *string { return &s }("letter"),
+    Theme:    func(s string) *string { return &s }("engineering"),
+})
+if err != nil {
+    log.Fatal(err)
+}
+```
+
+Rules:
+
+- Provide exactly one input source: `Input`, `MarkdownText`, or `MarkdownBase64`.
+- Provide at least one output mode: `Output`, `OutputDir`, or `Inline`.
+- When using `OutputDir` with inline Markdown, also provide `FileName`.
+- PDF metadata stays inside `result.Metadata`; no new response envelope is introduced.
+
+---
+
+## 4. Video Operations
 
 ### Video Transcode
 
@@ -171,7 +217,7 @@ result, err := client.VideoMetadata(ctx, &dpf.VideoMetadataJob{
 
 ---
 
-## 4. Audio Operations
+## 5. Audio Operations
 
 ### Audio Transcode
 
@@ -243,7 +289,16 @@ result, err := client.AudioSilenceTrim(ctx, &dpf.AudioSilenceTrimJob{
 
 ---
 
-## 5. Streaming Client (Recommended for Servers)
+## 6. Streaming Client (Recommended for Servers)
+
+The same helper exists on the persistent client:
+
+```go
+result, err := sc.MarkdownToPDF(&dpf.MarkdownToPDFJob{
+    MarkdownText: func(s string) *string { return &s }("# Streamed PDF"),
+    Inline:       true,
+})
+```
 
 For high-throughput scenarios, use `StreamClient` to reuse the Rust process:
 
