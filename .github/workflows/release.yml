@@ -48,9 +48,12 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y ffmpeg
 
-      - name: Clean build cache for Linux
-        if: runner.os == 'Linux'
-        run: rm -rf dpf/target
+      - name: Clean all build caches
+        run: |
+          rm -rf dpf/target
+          rm -rf vendor/glyphweaveforge/target
+          rm -rf ~/.cargo/registry/index
+          rm -rf ~/.cargo/git/db
 
       - name: Cache cargo registry
         uses: actions/cache@v4
