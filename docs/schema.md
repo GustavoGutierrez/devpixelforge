@@ -89,6 +89,9 @@ Render Markdown into PDF through GlyphWeaveForge with the Typst backend selected
   "theme": "professional",
   "theme_config": {
     "margin_mm": 14.0
+  },
+  "resource_files": {
+    "logo.png": "./assets/logo.png"
   }
 }
 ```
@@ -110,6 +113,7 @@ Render Markdown into PDF through GlyphWeaveForge with the Typst backend selected
 | `layout_mode` | String | No | `paged` or `single_page`. |
 | `theme` | String | No | `professional`, `engineering`, `invoice`, `scientific_article`, or `informational`. |
 | `theme_config` | Object | No | JSON overrides forwarded to GlyphWeaveForge `ThemeConfig`. |
+| `resource_files` | Object | No | Optional href-to-file mapping used with inline Markdown sources so local assets can be injected through the public resource resolver. |
 
 \* Exactly one of `input`, `markdown_text`, or `markdown_base64` is required.
 
@@ -122,6 +126,7 @@ Render Markdown into PDF through GlyphWeaveForge with the Typst backend selected
 - File outputs use `format="pdf"`, `width=0`, and `height=0`.
 - Inline outputs place base64 PDF bytes in `outputs[*].data_base64`.
 - `metadata.backend` is always `"typst"` for this operation.
+- `metadata.resource_resolver` reports `filesystem`, `custom`, or `none`.
 
 ---
 

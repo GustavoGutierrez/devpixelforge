@@ -1,8 +1,9 @@
 use typst::layout::PagedDocument;
 use typst_as_lib::TypstEngine;
+use typst_as_lib::typst_kit_options::TypstKitFontOptions;
 
 use crate::adapters::render::plan::{
-    build_render_plan, RenderCodeBlock, RenderElement, RenderImage, RenderLine,
+    RenderCodeBlock, RenderElement, RenderImage, RenderLine, build_render_plan,
 };
 use crate::core::ports::{RenderBackend, RenderRequest};
 use crate::core::{Document, ForgeError, Result};
@@ -24,6 +25,11 @@ impl RenderBackend for TypstPdfRenderer {
         let engine = TypstEngine::builder()
             .main_file(("main.typ", source))
             .with_static_file_resolver(assets.files())
+            .search_fonts_with(
+                TypstKitFontOptions::default()
+                    .include_system_fonts(true)
+                    .include_embedded_fonts(true),
+            )
             .build();
         let warned = engine.compile::<PagedDocument>();
         let document = warned.output.map_err(|error| ForgeError::TypstCompile {
@@ -80,7 +86,7 @@ fn build_typst_source(
     assets: &TypstAssetLibrary,
 ) -> String {
     let mut source = format!(
-        "#set page(width: {page_width_mm:.1}mm, height: {page_height_mm:.1}mm, margin: {margin_mm:.1}mm)\n#set par(justify: false)\n\n"
+        "#set page(width: {page_width_mm:.1}mm, height: {page_height_mm:.1}mm, margin: {margin_mm:.1}mm)\n#set text(font: \"DejaVu Serif\")\n#set par(justify: false)\n\n"
     );
     let mut image_index = 0usize;
     for element in elements {

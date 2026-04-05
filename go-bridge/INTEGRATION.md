@@ -85,15 +85,18 @@ Use `MarkdownToPDF` when an MCP server needs deterministic PDF output while keep
 ### Inline Markdown to inline PDF
 
 ```go
-markdown := "# MCP Report\n\nGenerated directly from memory."
+markdown := "# MCP Report\n\nGenerated directly from memory.\n\n![Logo](logo.png)"
 
 result, err := client.MarkdownToPDF(ctx, &dpf.MarkdownToPDFJob{
-    MarkdownText: &markdown,
-    Inline:       true,
-    Theme:        func(s string) *string { return &s }("professional"),
+	MarkdownText: &markdown,
+	Inline:       true,
+	Theme:        func(s string) *string { return &s }("professional"),
+	ResourceFiles: map[string]string{
+		"logo.png": "./assets/logo.png",
+	},
 })
 if err != nil {
-    log.Fatal(err)
+	log.Fatal(err)
 }
 
 // result.Outputs[0].DataBase64 contains the PDF bytes.
@@ -118,6 +121,8 @@ Rules:
 - Provide exactly one input source: `Input`, `MarkdownText`, or `MarkdownBase64`.
 - Provide at least one output mode: `Output`, `OutputDir`, or `Inline`.
 - When using `OutputDir` with inline Markdown, also provide `FileName`.
+- Prefer `Input` when Markdown references local images on disk.
+- When inline Markdown references assets, provide `ResourceFiles` so the Rust layer can wire them into `with_resource_resolver(...)`.
 - PDF metadata stays inside `result.Metadata`; no new response envelope is introduced.
 
 ---

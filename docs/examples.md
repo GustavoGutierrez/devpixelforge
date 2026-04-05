@@ -29,6 +29,9 @@ Working JSON examples for all DevPixelForge operations.
   "markdown_text": "# Inline Report\n\nRendered from memory.",
   "inline": true,
   "theme": "professional",
+  "resource_files": {
+    "logo.png": "./assets/logo.png"
+  },
   "theme_config": {
     "margin_mm": 14.0
   }
@@ -48,7 +51,9 @@ Working JSON examples for all DevPixelForge operations.
 
 The operation accepts exactly one source from `input`, `markdown_text`, or `markdown_base64`. At least one output mode is required: `output`, `output_dir`, or `inline=true`.
 
-For a real repository validation flow that converts `README.md` and `AGENTS.md` into PDFs with the built-in `engineering` theme, see [`validation/markdown-to-pdf/README.md`](validation/markdown-to-pdf/README.md).
+Prefer file-based input when Markdown references local images. If inline Markdown must resolve assets, provide `resource_files` so dpf can inject them through GlyphWeaveForge's public resource resolver.
+
+For a real repository validation flow that converts `README.md`, `AGENTS.md`, and all five built-in themes into PDFs, see [`validation/markdown-to-pdf/README.md`](validation/markdown-to-pdf/README.md).
 
 ---
 

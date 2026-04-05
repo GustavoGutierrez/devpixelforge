@@ -10,6 +10,7 @@ package dpf
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -158,15 +159,30 @@ func (c *Client) Execute(ctx context.Context, job any) (*JobResult, error) {
 	defer cancel()
 
 	cmd := exec.CommandContext(ctx, c.binaryPath, "process", "--job", string(data))
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
 
-	output, err := cmd.Output()
+	err = cmd.Run()
 	if err != nil {
+		if result, parseErr := parseJobResult(stdout.Bytes()); parseErr == nil {
+			return result, nil
+		}
 		if exitErr, ok := err.(*exec.ExitError); ok {
-			return nil, fmt.Errorf("imgproc: process failed: %s", string(exitErr.Stderr))
+			message := stderr.String()
+			if message == "" {
+				message = exitErr.Error()
+			}
+			return nil, fmt.Errorf("imgproc: process failed: %s", message)
 		}
 		return nil, fmt.Errorf("imgproc: execution failed: %w", err)
 	}
 
+	return parseJobResult(stdout.Bytes())
+}
+
+func parseJobResult(output []byte) (*JobResult, error) {
 	var result JobResult
 	if err := json.Unmarshal(output, &result); err != nil {
 		return nil, fmt.Errorf("imgproc: invalid response: %w", err)

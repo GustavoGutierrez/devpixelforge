@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.2] - 2026-04-03
+
+### Changed
+
+- Upgraded the Markdown-to-PDF integration to GlyphWeaveForge `0.1.3` and kept the vendored Typst/font override aligned with the new release.
+- Refactored the Rust integration to keep using GlyphWeaveForge's public `Forge` builder API with explicit Typst backend selection for file, directory, and in-memory conversion flows.
+- Added `resource_files` support for inline Markdown assets so local href mappings can be injected through GlyphWeaveForge's public resource resolver.
+- Revalidated all built-in themes (`invoice`, `scientific_article`, `professional`, `engineering`, `informational`) and refreshed the local release-readiness notes.
+
 ## [0.4.1] - 2026-04-03
 
 ### Changed

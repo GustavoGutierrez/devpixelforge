@@ -3,9 +3,13 @@ use base64::Engine;
 use glyphweaveforge::{
     BuiltInTheme, Forge, ForgeError, LayoutMode, PageSize, RenderBackendSelection, ThemeConfig,
 };
+use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
+use std::collections::BTreeMap;
+use std::io;
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 use thiserror::Error;
 
 use crate::{JobResult, OutputFile};
@@ -43,13 +47,18 @@ pub struct MarkdownToPdfParams {
     pub theme: Option<String>,
     /// Optional theme overrides passed through to GlyphWeaveForge.
     pub theme_config: Option<Value>,
+    /// Optional href-to-file mapping used to resolve assets for in-memory markdown sources.
+    pub resource_files: Option<BTreeMap<String, String>>,
 }
 
 #[derive(Debug, Clone)]
 enum MarkdownInput {
     File(PathBuf),
     Text(String),
-    Bytes(Vec<u8>),
+    SanitizedText {
+        markdown: String,
+        source_dir: Option<PathBuf>,
+    },
 }
 
 #[derive(Debug, Clone)]
@@ -63,6 +72,7 @@ struct ValidatedParams {
     layout_mode: LayoutMode,
     theme: Option<BuiltInTheme>,
     theme_config: Option<Value>,
+    resource_files: BTreeMap<String, PathBuf>,
 }
 
 #[derive(Debug, Error)]
@@ -180,10 +190,16 @@ fn validate_params(params: MarkdownToPdfParams) -> Result<ValidatedParams> {
             .decode(markdown_base64)
             .map_err(|_| MarkdownToPdfError::InvalidMarkdownBase64)?;
         std::str::from_utf8(&decoded).map_err(|_| MarkdownToPdfError::InvalidMarkdownUtf8)?;
-        MarkdownInput::Bytes(decoded)
+        MarkdownInput::SanitizedText {
+            markdown: String::from_utf8(decoded)
+                .map_err(|_| MarkdownToPdfError::InvalidMarkdownUtf8)?,
+            source_dir: None,
+        }
     } else {
         return Err(MarkdownToPdfError::InvalidInputSelection.into());
     };
+
+    let input = sanitize_input(input)?;
 
     if params.output_dir.is_some()
         && params.file_name.is_none()
@@ -206,6 +222,12 @@ fn validate_params(params: MarkdownToPdfParams) -> Result<ValidatedParams> {
         layout_mode: resolve_layout_mode(params.layout_mode)?,
         theme: resolve_theme(params.theme)?,
         theme_config: params.theme_config,
+        resource_files: params
+            .resource_files
+            .unwrap_or_default()
+            .into_iter()
+            .map(|(href, path)| (href, PathBuf::from(path)))
+            .collect(),
     })
 }
 
@@ -284,23 +306,54 @@ fn render_to_directory(params: &ValidatedParams, output_dir: &Path) -> Result<Pa
 }
 
 fn build_forge(params: &ValidatedParams) -> Forge<'_> {
-    let mut forge = Forge::new()
+    let forge = match &params.input {
+        MarkdownInput::File(path) => Forge::new().from_path(path),
+        MarkdownInput::Text(markdown) => Forge::new().from_text(markdown),
+        MarkdownInput::SanitizedText { markdown, .. } => Forge::new().from_text(markdown),
+    };
+
+    let mut forge = forge
         .with_backend(RenderBackendSelection::Typst)
         .with_page_size(params.page_size)
         .with_layout_mode(params.layout_mode);
 
-    if params.theme.is_some() || params.theme_config.is_some() {
+    if let (Some(theme), None) = (params.theme.as_ref(), params.theme_config.as_ref()) {
+        forge = forge.with_theme(*theme);
+    } else if params.theme.is_some() || params.theme_config.is_some() {
         forge = forge.with_theme_config(ThemeConfig {
             built_in: params.theme,
             custom_theme_json: params.theme_config.clone(),
         });
     }
 
-    match &params.input {
-        MarkdownInput::File(path) => forge.from_path(path),
-        MarkdownInput::Text(markdown) => forge.from_text(markdown),
-        MarkdownInput::Bytes(bytes) => forge.from_bytes(bytes),
+    if should_attach_resource_resolver(params) {
+        let resource_files = Arc::new(params.resource_files.clone());
+        let source_dir = sanitized_source_dir(params).map(PathBuf::from);
+        forge.with_resource_resolver(move |href| {
+            resolve_resource_file(resource_files.as_ref(), source_dir.as_deref(), href)
+        })
+    } else {
+        forge
     }
+}
+
+fn resolve_resource_file(
+    resource_files: &BTreeMap<String, PathBuf>,
+    source_dir: Option<&Path>,
+    href: &str,
+) -> io::Result<Vec<u8>> {
+    if let Some(path) = resource_files.get(href) {
+        return std::fs::read(path);
+    }
+
+    if let Some(source_dir) = source_dir {
+        return std::fs::read(source_dir.join(href));
+    }
+
+    Err(io::Error::new(
+        io::ErrorKind::NotFound,
+        format!("resource not found in resource_files: {href}"),
+    ))
 }
 
 fn resolve_output_dir_path(params: &ValidatedParams, output_dir: &Path) -> Result<PathBuf> {
@@ -316,9 +369,14 @@ fn resolve_output_dir_path(params: &ValidatedParams, output_dir: &Path) -> Resul
                 .unwrap_or("document");
             Ok(output_dir.join(format!("{}.pdf", stem)))
         }
-        MarkdownInput::Text(_) | MarkdownInput::Bytes(_) => {
-            Err(MarkdownToPdfError::MissingFileNameForInlineDirectoryOutput.into())
-        }
+        MarkdownInput::Text(_)
+        | MarkdownInput::SanitizedText {
+            source_dir: None, ..
+        } => Err(MarkdownToPdfError::MissingFileNameForInlineDirectoryOutput.into()),
+        MarkdownInput::SanitizedText {
+            source_dir: Some(_),
+            ..
+        } => Err(MarkdownToPdfError::MissingFileNameForInlineDirectoryOutput.into()),
     }
 }
 
@@ -380,7 +438,145 @@ fn build_metadata(params: &ValidatedParams) -> Value {
         "theme": theme_label(params.theme.as_ref()),
         "inline": params.inline,
         "has_file_output": params.output.is_some() || params.output_dir.is_some(),
+        "resource_resolver": resource_resolver_label(params),
+        "resource_files": params.resource_files.len(),
     })
+}
+
+fn resource_resolver_label(params: &ValidatedParams) -> &'static str {
+    if !params.resource_files.is_empty() {
+        "custom"
+    } else if matches!(params.input, MarkdownInput::File(_))
+        || sanitized_source_dir(params).is_some()
+    {
+        "filesystem"
+    } else {
+        "none"
+    }
+}
+
+fn should_attach_resource_resolver(params: &ValidatedParams) -> bool {
+    !params.resource_files.is_empty() || sanitized_source_dir(params).is_some()
+}
+
+fn sanitized_source_dir(params: &ValidatedParams) -> Option<&Path> {
+    match &params.input {
+        MarkdownInput::SanitizedText {
+            source_dir: Some(source_dir),
+            ..
+        } => Some(source_dir.as_path()),
+        _ => None,
+    }
+}
+
+fn sanitize_input(input: MarkdownInput) -> Result<MarkdownInput> {
+    match input {
+        MarkdownInput::File(path) => {
+            let markdown = std::fs::read_to_string(&path).with_context(|| {
+                format!(
+                    "failed to read markdown input for sanitization: {}",
+                    path.display()
+                )
+            })?;
+            let sanitized = sanitize_markdown(&markdown);
+            if sanitized.changed {
+                Ok(MarkdownInput::SanitizedText {
+                    markdown: sanitized.markdown,
+                    source_dir: path.parent().map(Path::to_path_buf),
+                })
+            } else {
+                Ok(MarkdownInput::File(path))
+            }
+        }
+        MarkdownInput::Text(markdown) => {
+            Ok(MarkdownInput::Text(sanitize_markdown(&markdown).markdown))
+        }
+        MarkdownInput::SanitizedText {
+            markdown,
+            source_dir,
+        } => Ok(MarkdownInput::SanitizedText {
+            markdown: sanitize_markdown(&markdown).markdown,
+            source_dir,
+        }),
+    }
+}
+
+#[derive(Debug)]
+struct SanitizedMarkdown {
+    markdown: String,
+    changed: bool,
+}
+
+fn sanitize_markdown(markdown: &str) -> SanitizedMarkdown {
+    let block_wrapper_re =
+        Regex::new(r#"(?i)^\s*</?(?:p|div|span|section|article|header|footer|center)\b[^>]*>\s*$"#)
+            .expect("wrapper regex should compile");
+    let img_tag_re = Regex::new(r#"(?i)<img\b[^>]*>"#).expect("img regex should compile");
+
+    let mut changed = false;
+    let mut lines = Vec::new();
+    let mut in_code_fence = false;
+
+    for line in markdown.lines() {
+        let trimmed = line.trim_start();
+        if trimmed.starts_with("```") || trimmed.starts_with("~~~") {
+            in_code_fence = !in_code_fence;
+            lines.push(line.to_string());
+            continue;
+        }
+
+        if in_code_fence {
+            lines.push(line.to_string());
+            continue;
+        }
+
+        if block_wrapper_re.is_match(line.trim()) {
+            changed = true;
+            continue;
+        }
+
+        let replaced = img_tag_re.replace_all(line, |captures: &regex::Captures<'_>| {
+            let tag = captures
+                .get(0)
+                .map(|value| value.as_str())
+                .unwrap_or_default();
+            convert_html_img_tag(tag)
+        });
+        if replaced.as_ref() != line {
+            changed = true;
+            lines.push(replaced.into_owned());
+        } else {
+            lines.push(line.to_string());
+        }
+    }
+
+    SanitizedMarkdown {
+        markdown: lines.join("\n"),
+        changed,
+    }
+}
+
+fn convert_html_img_tag(tag: &str) -> String {
+    let src = extract_html_attribute(tag, "src");
+    let alt = extract_html_attribute(tag, "alt").unwrap_or_else(|| "image".to_string());
+
+    match src {
+        Some(src) => format!("![{}]({})", alt, src),
+        None => tag.to_string(),
+    }
+}
+
+fn extract_html_attribute(tag: &str, attribute: &str) -> Option<String> {
+    let pattern = format!(
+        r#"(?i)\b{}\s*=\s*(?:\"([^\"]*)\"|'([^']*)')"#,
+        regex::escape(attribute)
+    );
+    let regex = Regex::new(&pattern).expect("attribute regex should compile");
+    let captures = regex.captures(tag)?;
+    captures
+        .get(1)
+        .or_else(|| captures.get(2))
+        .map(|value| value.as_str().to_string())
 }
 
 fn page_size_label(page_size: &PageSize) -> Value {
@@ -445,6 +641,7 @@ mod tests {
             layout_mode: None,
             theme: None,
             theme_config: None,
+            resource_files: None,
         };
 
         let error = validate_params(params).expect_err("validation should fail");
@@ -469,6 +666,7 @@ mod tests {
             layout_mode: None,
             theme: None,
             theme_config: None,
+            resource_files: None,
         };
 
         let error = validate_params(params).expect_err("validation should fail");
@@ -491,6 +689,7 @@ mod tests {
             layout_mode: None,
             theme: None,
             theme_config: None,
+            resource_files: None,
         };
 
         let error = validate_params(params).expect_err("validation should fail");
@@ -513,6 +712,7 @@ mod tests {
             layout_mode: None,
             theme: None,
             theme_config: None,
+            resource_files: None,
         };
 
         let error = validate_params(params).expect_err("validation should fail");
@@ -527,6 +727,24 @@ mod tests {
         assert_eq!(output.width, 0);
         assert_eq!(output.height, 0);
         assert!(output.data_base64.is_some());
+    }
+
+    #[test]
+    fn sanitizes_raw_html_wrappers_and_images() {
+        let sanitized =
+            sanitize_markdown("<p align=\"center\">\n<img src=\"logo.png\" alt=\"Logo\">\n</p>\n");
+
+        assert!(sanitized.changed);
+        assert_eq!(sanitized.markdown, "![Logo](logo.png)");
+    }
+
+    #[test]
+    fn keeps_raw_html_inside_code_fences() {
+        let source = "```html\n<div align=\"center\">\n</div>\n```";
+        let sanitized = sanitize_markdown(source);
+
+        assert!(!sanitized.changed);
+        assert_eq!(sanitized.markdown, source);
     }
 
     #[test]
@@ -545,6 +763,7 @@ mod tests {
             layout_mode: Some("paged".into()),
             theme: Some("engineering".into()),
             theme_config: None,
+            resource_files: None,
         })
         .expect("conversion should succeed");
 
@@ -579,6 +798,7 @@ mod tests {
             layout_mode: None,
             theme: None,
             theme_config: None,
+            resource_files: None,
         })
         .expect("conversion should succeed");
 
@@ -603,6 +823,7 @@ mod tests {
             layout_mode: None,
             theme: Some("engineering".into()),
             theme_config: None,
+            resource_files: None,
         })
         .expect("conversion should succeed");
 
@@ -627,6 +848,7 @@ mod tests {
             layout_mode: None,
             theme: Some("engineering".into()),
             theme_config: None,
+            resource_files: None,
         })
         .expect("conversion should succeed");
 
@@ -651,6 +873,7 @@ mod tests {
             layout_mode: None,
             theme: Some("engineering".into()),
             theme_config: None,
+            resource_files: None,
         })
         .expect("conversion should succeed");
 
@@ -677,6 +900,7 @@ mod tests {
             layout_mode: None,
             theme: Some("engineering".into()),
             theme_config: None,
+            resource_files: None,
         })
         .expect("conversion should succeed");
 

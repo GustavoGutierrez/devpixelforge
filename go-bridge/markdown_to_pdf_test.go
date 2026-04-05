@@ -15,6 +15,9 @@ func TestMarkdownToPDFJobJSON(t *testing.T) {
 		MarkdownText: strPtr("# JSON contract"),
 		Inline:       true,
 		Theme:        strPtr("engineering"),
+		ResourceFiles: map[string]string{
+			"sample.png": "fixtures/sample.png",
+		},
 	}
 
 	data, err := json.Marshal(job)
@@ -31,6 +34,32 @@ func TestMarkdownToPDFJobJSON(t *testing.T) {
 	}
 	if !contains(jsonStr, "inline") {
 		t.Fatal("JSON missing inline field")
+	}
+	if !contains(jsonStr, "resource_files") {
+		t.Fatal("JSON missing resource_files field")
+	}
+}
+
+func TestClientMarkdownToPDFInlineWithResourceFiles(t *testing.T) {
+	binaryPath := setupBinary(t)
+	client := NewClient(binaryPath)
+
+	result, err := client.MarkdownToPDF(context.Background(), &MarkdownToPDFJob{
+		MarkdownText: strPtr("# Inline Assets\n\n![Logo](sample.png)"),
+		Inline:       true,
+		Theme:        strPtr("informational"),
+		ResourceFiles: map[string]string{
+			"sample.png": getFixturePath("sample.png"),
+		},
+	})
+	if err != nil {
+		t.Fatalf("MarkdownToPDF failed: %v", err)
+	}
+	if !result.Success {
+		t.Fatal("expected success")
+	}
+	if result.Outputs[0].DataBase64 == nil {
+		t.Fatal("expected inline PDF bytes")
 	}
 }
 
@@ -133,6 +162,9 @@ func TestClientMarkdownToPDFValidationFailure(t *testing.T) {
 	}
 	if result.Success {
 		t.Fatal("expected failure result")
+	}
+	if result.Operation != "markdown_to_pdf" {
+		t.Fatalf("expected markdown_to_pdf operation, got %s", result.Operation)
 	}
 }
 

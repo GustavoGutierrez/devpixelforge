@@ -24,7 +24,7 @@ fn crate_root_docs() -> &'static str {
 }
 
 fn agents_guidance() -> &'static str {
-    include_str!("../AGENTS.md")
+    include_str!("../../../AGENTS.md")
 }
 
 #[cfg(feature = "fs")]
@@ -261,4 +261,45 @@ fn typst_backend_works_with_memory_only_input_and_output() {
 
     let bytes = result.bytes.expect("bytes should exist");
     assert!(bytes.starts_with(b"%PDF"));
+}
+
+#[cfg(all(feature = "renderer-typst", feature = "fs"))]
+#[test]
+fn integration_guide_theme_loop_produces_non_blank_pdfs() {
+    use glyphweaveforge::RenderBackendSelection;
+
+    let temp = tempdir().expect("tempdir should exist");
+    let markdown = temp.path().join("guide.md");
+    std::fs::write(
+        &markdown,
+        "# Theme Validation\n\nA themed PDF should not be blank.",
+    )
+    .expect("markdown should be written");
+
+    let themes = [
+        ("invoice", BuiltInTheme::Invoice),
+        ("scientific-article", BuiltInTheme::ScientificArticle),
+        ("professional", BuiltInTheme::Professional),
+        ("engineering", BuiltInTheme::Engineering),
+        ("informational", BuiltInTheme::Informational),
+    ];
+
+    for (name, theme) in themes {
+        let output = temp.path().join(format!("{name}.pdf"));
+        Forge::new()
+            .from_path(&markdown)
+            .to_file(&output)
+            .with_backend(RenderBackendSelection::Typst)
+            .with_page_size(PageSize::A4)
+            .with_theme(theme)
+            .convert()
+            .expect("theme conversion should succeed");
+
+        let bytes = std::fs::read(&output).expect("PDF should exist");
+        assert!(bytes.starts_with(b"%PDF"));
+        assert!(
+            bytes.len() > 512,
+            "theme {name} should not render a blank PDF"
+        );
+    }
 }

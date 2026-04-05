@@ -12,6 +12,7 @@
 use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use std::io::{self, BufRead, Write};
 use std::path::PathBuf;
 use std::time::Instant;
@@ -191,6 +192,7 @@ fn main() -> Result<()> {
         Some(Commands::Process { job }) => {
             let result = process_job_json(&job)?;
             println!("{}", result);
+            exit_if_job_failed(&result);
         }
         Some(Commands::Batch { file }) => {
             let content = std::fs::read_to_string(&file)
@@ -210,6 +212,7 @@ fn main() -> Result<()> {
             if !input.trim().is_empty() {
                 let result = process_job_json(input.trim())?;
                 println!("{}", result);
+                exit_if_job_failed(&result);
             }
         }
     }
@@ -267,6 +270,17 @@ fn process_job_json(json: &str) -> Result<String> {
             error: e.to_string(),
             elapsed_ms: start.elapsed().as_millis() as u64,
         })?),
+    }
+}
+
+fn exit_if_job_failed(result: &str) {
+    let success = serde_json::from_str::<Value>(result)
+        .ok()
+        .and_then(|value| value.get("success").and_then(Value::as_bool))
+        .unwrap_or(false);
+
+    if !success {
+        std::process::exit(1);
     }
 }
 

@@ -5,6 +5,9 @@
   "output_dir": "/tmp/reports",
   "file_name": "inline-report.pdf",
   "theme": "professional",
+  "resource_files": {
+    "logo.png": "./assets/logo.png"
+  },
   "theme_config": {
     "margin_mm": 14.0
   }

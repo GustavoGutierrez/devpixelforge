@@ -42,10 +42,12 @@ DevPixelForge (dpf) is a **high-performance multimedia processing engine** that 
 
 ### Markdown-to-PDF Highlights
 
-- Uses GlyphWeaveForge with the Typst backend selected explicitly.
+- Uses GlyphWeaveForge via dpf `0.4.2` with the Typst backend selected explicitly.
 - Supports file input, inline text, or base64-encoded Markdown.
 - Supports file output, directory output, and inline base64 PDF responses.
-- Supports built-in GlyphWeaveForge themes including `engineering`, `professional`, `invoice`, `scientific_article`, and `informational`.
+- Supports `resource_files` for in-memory Markdown inputs that reference local assets.
+- Supports built-in themes: `invoice`, `scientific_article`, `professional`, `engineering`, `informational`.
+- Available themes are validated against the current build. See [`integration-guide.md`](integration-guide.md) for complete API details.
 
 ---
 
@@ -74,8 +76,11 @@ git clone https://github.com/your-org/devpixelforge.git
 cd devpixelforge
 make build
 
-# Verify capabilities
+# Verify capabilities (reports version, operations, features)
 ./dpf/target/release/dpf caps
+
+# Or use the static musl binary
+./dpf/target/x86_64-unknown-linux-musl/release/dpf caps
 ```
 
 ### Basic Usage
@@ -149,7 +154,9 @@ make build
 
 - File input + `output` / `output_dir` keeps filesystem-relative asset resolution.
 - Inline input + `inline=true` returns base64 PDF bytes in `outputs[0].data_base64`.
+- Inline input + `resource_files` injects href-to-file asset mappings through the resource resolver.
 - Inline input + `output_dir` requires `file_name`.
+- Supported themes: `invoice`, `scientific_article`, `professional`, `engineering`, `informational`.
 
 Example:
 
@@ -158,9 +165,96 @@ Example:
   "operation": "markdown_to_pdf",
   "markdown_text": "# Report\n\nRendered by Typst.",
   "inline": true,
-  "theme": "professional"
+  "theme": "professional",
+  "resource_files": {
+    "logo.png": "./assets/logo.png"
+  }
 }
 ```
+
+---
+
+## Go Bridge Quick Start
+
+The Go bridge module is `github.com/GustavoGutierrez/devpixelforge-bridge`.
+
+### One-shot client
+
+```go
+client := dpf.NewClient("./dpf")
+client.SetTimeout(60 * time.Second)
+
+result, err := client.MarkdownToPDF(ctx, &dpf.MarkdownToPDFJob{
+    Input:    "docs/report.md",
+    Output:   "out/report.pdf",
+    PageSize: strPtr("letter"),
+    Theme:    strPtr("professional"),
+})
+
+if !result.Success {
+    log.Fatal("markdown_to_pdf returned success=false")
+}
+log.Printf("generated %s", result.Outputs[0].Path)
+```
+
+**Contract notes:**
+- `Client.MarkdownToPDF(...)` requires a `context.Context`.
+- `Client.SetTimeout(...)` controls the one-shot command timeout.
+- Structured validation failures can return `err == nil` with `result.Success == false`, so production code should check both values.
+
+### Stream client (persistent process)
+
+```go
+sc, err := dpf.NewStreamClient("./dpf")
+defer sc.Close()
+
+result, err := sc.MarkdownToPDF(&dpf.MarkdownToPDFJob{
+    MarkdownText: &markdown,
+    Inline:       true,
+    Theme:        strPtr("engineering"),
+})
+
+if !result.Success {
+    log.Fatal("stream markdown_to_pdf returned success=false")
+}
+```
+
+**StreamClient notes:**
+- Does not require a `context.Context` because the process is already running.
+- Ideal for MCP servers, worker pools, or high-throughput backends.
+
+### Inline PDF from Go
+
+```go
+markdown := "# Inline Report\n\nGenerated from Go memory."
+result, err := client.MarkdownToPDF(ctx, &dpf.MarkdownToPDFJob{
+    MarkdownText: &markdown,
+    Inline:       true,
+    Theme:        strPtr("professional"),
+})
+
+pdfBytes, err := base64.StdEncoding.DecodeString(*result.Outputs[0].DataBase64)
+```
+
+### Custom Page Size
+
+```json
+{
+  "operation": "markdown_to_pdf",
+  "input": "docs/report.md",
+  "output": "out/report-custom.pdf",
+  "page_width_mm": 210.0,
+  "page_height_mm": 297.0,
+  "layout_mode": "single_page",
+  "theme": "scientific_article"
+}
+```
+
+Custom page size requires both dimensions and both must be positive.
+
+See [`integration-guide.md`](integration-guide.md) for complete Go bridge documentation.
+
+---
 
 ### CLI Validation Artifacts
 
@@ -170,6 +264,7 @@ The repository includes a reproducible CLI validation guide and generated sample
 - Generated PDFs:
   - [`docs/validation/markdown-to-pdf/readme.pdf`](docs/validation/markdown-to-pdf/readme.pdf)
   - [`docs/validation/markdown-to-pdf/agents.pdf`](docs/validation/markdown-to-pdf/agents.pdf)
+  - [`docs/validation/markdown-to-pdf/themes/`](docs/validation/markdown-to-pdf/themes/)
 
 ### Video Operations
 
@@ -247,6 +342,137 @@ make build-rust-static
 
 ---
 
+## Version and Capabilities
+
+The current binary reports:
+
+```json
+{
+  "version": "0.4.2",
+  "operations": ["markdown_to_pdf"],
+  "output_formats": {
+    "document": ["pdf"]
+  },
+  "features": {
+    "markdown_to_pdf": true,
+    "markdown_to_pdf_typst": true,
+    "pdf_inline_output": true,
+    "streaming_mode": true,
+    "parallel_batch": true
+  }
+}
+```
+
+Validate in your environment:
+
+```bash
+./dpf/target/release/dpf caps
+
+# Or the static binary
+./dpf/target/x86_64-unknown-linux-musl/release/dpf caps
+```
+
+---
+
+## Validation Commands
+
+Reproducible validation commands used in this repository:
+
+```bash
+# Validate README to PDF
+./dpf/target/release/dpf process \
+  --job '{"operation":"markdown_to_pdf","input":"README.md","output":"docs/validation/markdown-to-pdf/readme.pdf","theme":"engineering"}'
+
+# Validate AGENTS.md to PDF
+./dpf/target/release/dpf process \
+  --job '{"operation":"markdown_to_pdf","input":"AGENTS.md","output":"docs/validation/markdown-to-pdf/agents.pdf","theme":"engineering"}'
+
+# Validate all themes
+for theme in invoice scientific_article professional engineering informational; do
+  ./dpf/target/release/dpf process \
+    --job "{\"operation\":\"markdown_to_pdf\",\"input\":\"dpf/test_fixtures/sample.md\",\"output\":\"docs/validation/markdown-to-pdf/themes/${theme//_/-}.pdf\",\"theme\":\"${theme}\"}"
+done
+```
+
+---
+
+## Supported Behavior
+
+Current repository validation covers:
+
+- UTF-8 text rendering
+- Headings
+- Ordered and unordered lists
+- Block quotes
+- Fenced code blocks
+- Inline code
+- Markdown links
+- Standard Markdown images
+- Basic HTML `<img>` extraction
+- Standard Markdown tables
+- All built-in themes rendering non-blank PDFs
+- File output, inline output, batch mode, and stream mode
+
+---
+
+## Limitations and Notes
+
+- Raw HTML is not a general layout system. `dpf` only sanitizes a narrow subset of wrapper tags and converts basic HTML `<img>` tags into Markdown-compatible image content before rendering.
+- Footnotes, Mermaid fences, and math fences should be treated as limited or fallback content unless you validate your exact documents against the current build.
+- When your input comes from memory, local assets are not auto-discovered unless you provide `resource_files`.
+
+---
+
+## Best Practices
+
+- Prefer `input` over inline Markdown when the document references local files.
+- Use `resource_files` for inline Markdown with images or other local assets.
+- Use `theme` for stable built-in styling and `theme_config` only when you need explicit overrides.
+- Use `caps` at startup if your integration must assert supported features or the binary version.
+- Keep generated PDFs in separate output paths when comparing themes.
+
+---
+
+## Response Structure
+
+Successful responses include:
+
+```json
+{
+  "success": true,
+  "operation": "markdown_to_pdf",
+  "outputs": [
+    {
+      "path": "out/report.pdf",
+      "format": "pdf",
+      "width": 0,
+      "height": 0,
+      "size_bytes": 122623,
+      "data_base64": null
+    }
+  ],
+  "elapsed_ms": 169,
+  "metadata": {
+    "backend": "typst",
+    "page_size": "a4",
+    "layout_mode": "paged",
+    "theme": "engineering",
+    "inline": false,
+    "has_file_output": true,
+    "resource_resolver": "filesystem",
+    "resource_files": 0
+  }
+}
+```
+
+Metadata notes:
+- `metadata.backend` is always `typst` for `markdown_to_pdf`.
+- `metadata.resource_resolver` is `filesystem`, `custom`, or `none`.
+- File outputs always report `format="pdf"`, `width=0`, and `height=0`.
+- Inline outputs return the PDF bytes in `outputs[*].data_base64`.
+
+---
+
 ## Testing
 
 ```bash
@@ -278,6 +504,7 @@ cd go-bridge && go test -v
 | [💡 Examples](docs/examples.md) | Working examples for all operations |
 | [🧪 Testing](docs/testing/README.md) | Testing architecture and guides |
 | [✅ Markdown-to-PDF Validation](docs/validation/markdown-to-pdf/README.md) | Reproduction steps and committed validation artifacts |
+| [🔗 Integration Guide](integration-guide.md) | Complete API reference for dpf 0.4.2 and Go bridge usage |
 
 ---
 

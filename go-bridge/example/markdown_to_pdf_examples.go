@@ -17,11 +17,14 @@ func markdownToPDFExamples() {
 	client.SetTimeout(60 * time.Second)
 	ctx := context.Background()
 
-	inlineMarkdown := "# Inline PDF\n\nGenerated without caller-managed temp files."
+	inlineMarkdown := "# Inline PDF\n\nGenerated without caller-managed temp files.\n\n![Sample](sample.png)"
 	inlineResult, err := client.MarkdownToPDF(ctx, &dpf.MarkdownToPDFJob{
 		MarkdownText: &inlineMarkdown,
 		Inline:       true,
 		Theme:        strPtr("professional"),
+		ResourceFiles: map[string]string{
+			"sample.png": "../dpf/test_fixtures/sample.png",
+		},
 	})
 	if err != nil {
 		log.Printf("inline markdown_to_pdf failed: %v", err)

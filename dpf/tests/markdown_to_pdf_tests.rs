@@ -16,21 +16,22 @@ fn binary_path() -> String {
     format!("{}/target/debug/dpf", env!("CARGO_MANIFEST_DIR"))
 }
 
-fn build_binary() {
-    let binary = binary_path();
-    if !std::path::Path::new(&binary).exists() {
-        let output = Command::new("cargo")
-            .args(["build"])
-            .current_dir(env!("CARGO_MANIFEST_DIR"))
-            .output()
-            .expect("Failed to build binary");
+fn repo_root() -> String {
+    format!("{}/..", env!("CARGO_MANIFEST_DIR"))
+}
 
-        assert!(
-            output.status.success(),
-            "Failed to build binary: {}",
-            String::from_utf8_lossy(&output.stderr)
-        );
-    }
+fn build_binary() {
+    let output = Command::new("cargo")
+        .args(["build", "--bin", "dpf"])
+        .current_dir(env!("CARGO_MANIFEST_DIR"))
+        .output()
+        .expect("Failed to build binary");
+
+    assert!(
+        output.status.success(),
+        "Failed to build binary: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
 }
 
 #[test]
@@ -119,6 +120,8 @@ fn process_inline_markdown_to_inline_pdf() {
 
     assert_eq!(result["success"], true);
     assert_eq!(result["outputs"][0]["format"], "pdf");
+    assert_eq!(result["metadata"]["resource_resolver"], "none");
+    assert_eq!(result["metadata"]["resource_files"], 0);
 
     let data_base64 = result["outputs"][0]["data_base64"]
         .as_str()
@@ -127,6 +130,122 @@ fn process_inline_markdown_to_inline_pdf() {
         .decode(data_base64)
         .expect("inline PDF should decode from base64");
     assert!(decoded.starts_with(b"%PDF"));
+}
+
+#[test]
+fn process_inline_markdown_with_resource_files_to_inline_pdf() {
+    build_binary();
+
+    let job_json = json!({
+        "operation": "markdown_to_pdf",
+        "markdown_text": "# Inline Assets\n\n![Logo](sample.png)",
+        "inline": true,
+        "theme": "informational",
+        "resource_files": {
+            "sample.png": fixture_path("sample.png")
+        }
+    });
+
+    let output = Command::new(binary_path())
+        .args(["process", "--job", &job_json.to_string()])
+        .output()
+        .expect("Failed to execute inline markdown_to_pdf with resource files");
+
+    assert!(output.status.success());
+
+    let result: serde_json::Value =
+        serde_json::from_slice(&output.stdout).expect("Output should be valid JSON");
+
+    assert_eq!(result["success"], true);
+    assert_eq!(result["outputs"][0]["format"], "pdf");
+    assert_eq!(result["metadata"]["resource_resolver"], "custom");
+    assert_eq!(result["metadata"]["resource_files"], 1);
+
+    let data_base64 = result["outputs"][0]["data_base64"]
+        .as_str()
+        .expect("inline output should include data_base64");
+    let decoded = base64::engine::general_purpose::STANDARD
+        .decode(data_base64)
+        .expect("inline PDF should decode from base64");
+    assert!(decoded.starts_with(b"%PDF"));
+}
+
+#[test]
+fn process_markdown_file_to_pdf_output_for_all_builtin_themes() {
+    build_binary();
+
+    let temp_dir = TempDir::new().expect("temp dir should be created");
+    let themes = [
+        "invoice",
+        "scientific_article",
+        "professional",
+        "engineering",
+        "informational",
+    ];
+
+    for theme in themes {
+        let output_path = temp_dir.path().join(format!("{theme}.pdf"));
+        let job_json = json!({
+            "operation": "markdown_to_pdf",
+            "input": fixture_path("sample.md"),
+            "output": output_path,
+            "theme": theme
+        });
+
+        let output = Command::new(binary_path())
+            .args(["process", "--job", &job_json.to_string()])
+            .output()
+            .expect("Failed to execute themed markdown_to_pdf process command");
+
+        assert!(output.status.success(), "theme {theme} should execute");
+
+        let result: serde_json::Value =
+            serde_json::from_slice(&output.stdout).expect("Output should be valid JSON");
+
+        assert_eq!(result["success"], true, "theme {theme} should succeed");
+
+        let bytes = std::fs::read(temp_dir.path().join(format!("{theme}.pdf")))
+            .expect("PDF should exist for each theme");
+        assert!(
+            bytes.starts_with(b"%PDF"),
+            "theme {theme} should render a PDF"
+        );
+        assert!(
+            bytes.len() > 512,
+            "theme {theme} should not render a blank PDF"
+        );
+    }
+}
+
+#[test]
+fn process_repository_readme_to_pdf_output() {
+    build_binary();
+
+    let temp_dir = TempDir::new().expect("temp dir should be created");
+    let output_path = temp_dir.path().join("readme.pdf");
+
+    let job_json = json!({
+        "operation": "markdown_to_pdf",
+        "input": format!("{}/README.md", repo_root()),
+        "output": output_path,
+        "theme": "engineering"
+    });
+
+    let output = Command::new(binary_path())
+        .args(["process", "--job", &job_json.to_string()])
+        .output()
+        .expect("Failed to execute repository README markdown_to_pdf process command");
+
+    assert!(output.status.success());
+
+    let result: serde_json::Value =
+        serde_json::from_slice(&output.stdout).expect("Output should be valid JSON");
+
+    assert_eq!(result["success"], true);
+    assert!(output_path.exists());
+
+    let bytes = std::fs::read(output_path).expect("PDF should exist");
+    assert!(bytes.starts_with(b"%PDF"));
 }
 
 #[test]
@@ -214,7 +333,7 @@ fn reject_multiple_markdown_input_sources() {
         .output()
         .expect("Failed to execute invalid markdown_to_pdf process command");
 
-    assert!(output.status.success());
+    assert!(!output.status.success());
 
     let result: serde_json::Value =
         serde_json::from_slice(&output.stdout).expect("Output should be valid JSON");
