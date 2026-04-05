@@ -51,7 +51,6 @@ jobs:
       - name: Clean all build caches
         run: |
           rm -rf dpf/target
-          rm -rf vendor/glyphweaveforge/target
           rm -rf ~/.cargo/registry/index
           rm -rf ~/.cargo/git/db
 
