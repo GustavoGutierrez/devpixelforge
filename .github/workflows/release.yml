@@ -48,6 +48,10 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y ffmpeg
 
+      - name: Clean build cache for Linux
+        if: runner.os == 'Linux'
+        run: rm -rf dpf/target
+
       - name: Cache cargo registry
         uses: actions/cache@v4
         with:
