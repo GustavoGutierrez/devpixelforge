@@ -18,17 +18,17 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            target: x86_64-unknown-linux-musl
+            target: x86_64-unknown-linux-gnu
             artifact: dpf-linux-amd64
             strip: true
           - os: macos-latest
             target: aarch64-apple-darwin
             artifact: dpf-macos-arm64
             strip: true
-          # - os: macos-12
-          #   target: x86_64-apple-darwin
-          #   artifact: dpf-macos-intel
-          #   strip: true
+          - os: macos-12
+            target: x86_64-apple-darwin
+            artifact: dpf-macos-intel
+            strip: true
 
     steps:
       - name: Checkout
@@ -46,7 +46,7 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y musl-tools ffmpeg
+          sudo apt-get install -y ffmpeg
 
       - name: Cache cargo registry
         uses: actions/cache@v4
@@ -71,26 +71,16 @@ jobs:
       - name: Build release
         run: |
           cd dpf
-          if [ "${{ matrix.target }}" != "" ]; then
-            cargo build --release --target ${{ matrix.target }}
-            STRIP_TARGET="${{ matrix.target }}"
-          else
-            cargo build --release
-            STRIP_TARGET="release"
-          fi
+          cargo build --release --target ${{ matrix.target }}
           
           if [ "${{ matrix.strip }}" = "true" ]; then
-            strip target/$STRIP_TARGET/release/dpf
+            strip target/${{ matrix.target }}/release/dpf
           fi
 
       - name: Prepare artifact
         id: prepare
         run: |
-          if [ "${{ matrix.target }}" != "" ]; then
-            cp dpf/target/${{ matrix.target }}/release/dpf dpf-${{ matrix.artifact }}
-          else
-            cp dpf/target/release/dpf dpf-${{ matrix.artifact }}
-          fi
+          cp dpf/target/${{ matrix.target }}/release/dpf dpf-${{ matrix.artifact }}
           echo "filename=dpf-${{ matrix.artifact }}" >> $GITHUB_OUTPUT
 
       - name: Upload artifact
