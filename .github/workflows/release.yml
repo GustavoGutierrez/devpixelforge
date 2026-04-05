@@ -25,10 +25,6 @@ jobs:
             target: aarch64-apple-darwin
             artifact: dpf-macos-arm64
             strip: true
-          - os: macos-12
-            target: x86_64-apple-darwin
-            artifact: dpf-macos-intel
-            strip: true
 
     steps:
       - name: Checkout
