@@ -1,7 +1,7 @@
 # ─── Rust ──────────────────────────────────────────────────────
 rust-imgproc/target/
 dpf/target/
-vendor/glyphweaveforge/target/
+vendor/
 
 # ─── Test fixtures (large media files - download with script) ────
 dpf/test_fixtures/*.mp4
