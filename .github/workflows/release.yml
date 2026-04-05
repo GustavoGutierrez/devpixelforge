@@ -117,9 +117,10 @@ jobs:
           cd artifacts
           for dir in */; do
             name="${dir%/}"
-            tar -czvf "../dpf-${name}.tar.gz" -C "$dir" .
+            tar -czvf "${name}.tar.gz" -C "$dir" .
           done
           ls -lh *.tar.gz
+          cp *.tar.gz ../
 
       - name: Generate checksums
         run: |
