@@ -42,7 +42,7 @@ DevPixelForge (dpf) is a **high-performance multimedia processing engine** that 
 
 ### Markdown-to-PDF Highlights
 
-- Uses GlyphWeaveForge via dpf `0.4.2` with the Typst backend selected explicitly.
+- Uses GlyphWeaveForge via dpf `0.5.0` with the Typst backend selected explicitly.
 - Supports file input, inline text, or base64-encoded Markdown.
 - Supports file output, directory output, and inline base64 PDF responses.
 - Supports `resource_files` for in-memory Markdown inputs that reference local assets.

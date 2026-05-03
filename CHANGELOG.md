@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-05-03
+
+### Added
+
+- Enabled GFM math rendering (`$...$`, `$$...$$`) via glyphweaveforge `math` feature with Typst backend.
+- Enabled Rust-native Mermaid subset diagram rendering via glyphweaveforge `mermaid` feature (no Node/npm required).
+- Added `markdown_to_pdf_math` and `markdown_to_pdf_mermaid` feature flags to `caps` metadata.
+- Added `ThemeOverride` struct to Go bridge (`BodyFontSize`, `CodeFontSize`, `HeadingScale`, `MarginMM`) for typed theme customization.
+- Added `TestThemeOverrideSerialization` and `TestClientMarkdownToPDFWithThemeOverride` Go tests.
+- Documented math, mermaid, and theme customization in the integration guide with Go examples.
+
+### Changed
+
+- Upgraded glyphweaveforge from `0.1.3` to `0.1.6` (features: `renderer-typst`, `math`, `mermaid`).
+- Go bridge `Client.MarkdownToPDF` and `StreamClient.MarkdownToPDF` auto-apply `ThemeOverride` into `theme_config` JSON.
+- Updated integration guide with theme customization fields, math/mermaid support, and `ThemeOverride` usage from Go.
+
 ## [0.4.2] - 2026-04-03
 
 ### Changed

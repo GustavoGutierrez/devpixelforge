@@ -1,6 +1,6 @@
 # DevPixelForge integration guide
 
-This document describes the current public integration surface for `dpf 0.4.2`,
+This document describes the current public integration surface for `dpf 0.5.0`,
 with special focus on the `markdown_to_pdf` operation.
 
 ## Important scope note
@@ -18,7 +18,7 @@ The current binary reports:
 
 ```json
 {
-  "version": "0.4.2",
+  "version": "0.5.0",
   "operations": ["markdown_to_pdf"],
   "output_formats": {
     "document": ["pdf"]
@@ -140,7 +140,7 @@ It also requires at least one output mode from `output`, `output_dir`, or
 
 ## Built-in themes
 
-The current `dpf 0.4.2` build accepts these theme strings:
+The current `dpf 0.5.0` build accepts these theme strings:
 
 - `invoice`
 - `scientific_article`
@@ -592,7 +592,7 @@ done
 
 ## Summary
 
-If you are integrating the current project version, target `dpf 0.4.2` and its
+If you are integrating the current project version, target `dpf 0.5.0` and its
 JSON-based `markdown_to_pdf` API.
 
 Use `theme` values from the current built-in list, prefer file input for
