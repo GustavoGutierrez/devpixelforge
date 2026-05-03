@@ -358,6 +358,8 @@ fn print_capabilities() {
             "audio_silence_trim": true,
             "markdown_to_pdf": true,
             "markdown_to_pdf_typst": true,
+            "markdown_to_pdf_math": true,
+            "markdown_to_pdf_mermaid": true,
             "pdf_inline_output": true
         },
         "threads": rayon::current_num_threads()

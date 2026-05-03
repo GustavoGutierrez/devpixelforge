@@ -8,9 +8,9 @@ with special focus on the `markdown_to_pdf` operation.
 `dpf` is integrated as a compiled binary that speaks JSON over CLI/stdin/stdout.
 For external consumers, that JSON protocol is the stable integration surface.
 
-`glyphweaveforge` is still the underlying Markdown-to-PDF renderer, but it is an
-implementation detail of `dpf`, not the main integration entry point documented
-here.
+`glyphweaveforge` (v0.1.6+, features: `renderer-typst`, `math`, `mermaid`) is the
+underlying Markdown-to-PDF engine, but it is an implementation detail of `dpf`,
+not the main integration entry point documented here.
 
 ## Version validated
 
@@ -26,6 +26,8 @@ The current binary reports:
   "features": {
     "markdown_to_pdf": true,
     "markdown_to_pdf_typst": true,
+    "markdown_to_pdf_math": true,
+    "markdown_to_pdf_mermaid": true,
     "pdf_inline_output": true,
     "streaming_mode": true,
     "parallel_batch": true
@@ -127,7 +129,7 @@ It also requires at least one output mode from `output`, `output_dir`, or
 | `page_height_mm` | No*** | Custom height in millimeters. |
 | `layout_mode` | No | Supported values: `paged`, `single_page`. Default is `paged`. |
 | `theme` | No | Built-in theme preset. See the theme list below. If omitted, renderer defaults are used. |
-| `theme_config` | No | JSON overrides forwarded to GlyphWeaveForge `ThemeConfig`. |
+| `theme_config` | No | JSON overrides forwarded to GlyphWeaveForge v0.1.6+ `ThemeConfig`. Accepts `body_font_size_pt`, `code_font_size_pt`, `heading_scale`, `margin_mm`, and `name`. |
 | `resource_files` | No | Optional href-to-file mapping for inline Markdown assets. |
 
 `*` Exactly one input source is required.
@@ -145,6 +147,47 @@ The current `dpf 0.4.2` build accepts these theme strings:
 - `professional`
 - `engineering`
 - `informational`
+
+### Theme customization (v0.1.6+)
+
+`theme_config` accepts a JSON object with any combination of these fields:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `name` | string | Custom theme name (for metadata). |
+| `body_font_size_pt` | float | Body text font size in points. |
+| `code_font_size_pt` | float | Code block font size in points. |
+| `heading_scale` | float | Heading size multiplier relative to body. |
+| `margin_mm` | float | Uniform page margin in millimeters. |
+
+The Typst backend applies the full theme profile (fonts, colors, margins, sizes, heading scale).
+
+Example with explicit overrides:
+
+```json
+{
+  "operation": "markdown_to_pdf",
+  "markdown_text": "# Custom Theme\n\nWith body 11pt and 15mm margins.",
+  "inline": true,
+  "theme": "engineering",
+  "theme_config": {
+    "body_font_size_pt": 11.0,
+    "code_font_size_pt": 9.0,
+    "margin_mm": 15.0
+  }
+}
+```
+
+### Math and Mermaid support (v0.1.6+)
+
+The current build enables GFM math (`$...$`, `$$...$$`) and a Rust-native Mermaid
+subset renderer. Both require the Typst backend (already the default for `markdown_to_pdf`).
+
+- Inline math: `$E=mc^2$`
+- Display math: `$$\sum_{i=1}^n i = \frac{n(n+1)}{2}$$`
+- Mermaid fences: ` ```mermaid ` blocks render natively without Node/npm/network
+
+Unsupported math commands and Mermaid syntax fall back to visible text notices.
 
 Example using the scientific article theme:
 
@@ -251,7 +294,8 @@ import (
 	dpf "github.com/GustavoGutierrez/devpixelforge-bridge"
 )
 
-func strPtr(s string) *string { return &s }
+func strPtr(s string) *string       { return &s }
+func float64Ptr(v float64) *float64 { return &v }
 
 func main() {
 	client := dpf.NewClient("./bin/dpf")
@@ -272,6 +316,36 @@ func main() {
 
 	log.Printf("generated %s", result.Outputs[0].Path)
 }
+```
+
+### Theme customization from Go (v0.1.6+)
+
+Use `ThemeOverride` for typed theme customization:
+
+```go
+markdown := "# Custom Theme\n\nBody 11pt with 15mm margins."
+
+result, err := client.MarkdownToPDF(context.Background(), &dpf.MarkdownToPDFJob{
+	MarkdownText: &markdown,
+	Inline:       true,
+	Theme:        strPtr("professional"),
+	ThemeOverride: &dpf.ThemeOverride{
+		BodyFontSize: float64Ptr(11.0),
+		CodeFontSize: float64Ptr(9.0),
+		MarginMM:     float64Ptr(15.0),
+	},
+})
+```
+
+Or use raw `ThemeConfig` JSON for ad-hoc overrides:
+
+```go
+result, err := client.MarkdownToPDF(context.Background(), &dpf.MarkdownToPDFJob{
+	MarkdownText: &markdown,
+	Inline:       true,
+	Theme:        strPtr("scientific_article"),
+	ThemeConfig:  []byte(`{"body_font_size_pt": 10.5, "heading_scale": 1.3}`),
+})
 ```
 
 ### Inline PDF from Go
@@ -483,8 +557,11 @@ The current repository validation covers:
 - Raw HTML is not a general layout system. `dpf` only sanitizes a narrow subset of
   wrapper tags and converts basic HTML `<img>` tags into Markdown-compatible image
   content before rendering.
-- Footnotes, Mermaid fences, and math fences should still be treated as limited or
-  fallback content unless you validate your exact documents against the current build.
+- Footnotes remain exposed through fallback text rather than full layout support.
+- Mermaid rendering covers the Rust-native subset; unsupported syntax falls back to
+  visible notices (no silent data loss).
+- Math rendering supports a practical TeX subset; unsupported environments fall back
+  to visible notices in Typst output (no silent data loss).
 - When your input comes from memory, local assets are not auto-discovered unless you
   provide `resource_files`.
 

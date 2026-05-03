@@ -345,10 +345,12 @@ func (c *Client) Exif(ctx context.Context, job *ExifJob) (*JobResult, error) {
 }
 
 // MarkdownToPDF converts Markdown into PDF using the Rust Typst-backed renderer.
+// Theme customization is applied via ThemeOverride (v0.1.6+) or ThemeConfig (raw JSON).
 func (c *Client) MarkdownToPDF(ctx context.Context, job *MarkdownToPDFJob) (*JobResult, error) {
 	if job.Operation == "" {
 		job.Operation = "markdown_to_pdf"
 	}
+	job.applyThemeOverride()
 	return c.Execute(ctx, job)
 }
 
@@ -558,10 +560,12 @@ func (sc *StreamClient) Exif(job *ExifJob) (*JobResult, error) {
 }
 
 // MarkdownToPDF converts Markdown into PDF using the persistent stream client.
+// Theme customization is applied via ThemeOverride (v0.1.6+) or ThemeConfig (raw JSON).
 func (sc *StreamClient) MarkdownToPDF(job *MarkdownToPDFJob) (*JobResult, error) {
 	if job.Operation == "" {
 		job.Operation = "markdown_to_pdf"
 	}
+	job.applyThemeOverride()
 	return sc.Execute(job)
 }
 

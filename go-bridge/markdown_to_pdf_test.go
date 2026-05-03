@@ -183,3 +183,75 @@ func assertMetadataBackend(t *testing.T, result *JobResult, expected string) {
 		t.Fatalf("expected backend %q, got %#v", expected, payload["backend"])
 	}
 }
+
+func TestThemeOverrideSerialization(t *testing.T) {
+	job := &MarkdownToPDFJob{
+		Operation:    "markdown_to_pdf",
+		MarkdownText: strPtr("# Custom Theme"),
+		Inline:       true,
+		Theme:        strPtr("engineering"),
+		ThemeOverride: &ThemeOverride{
+			BodyFontSize: float64Ptr(11.5),
+			CodeFontSize: float64Ptr(9.5),
+			HeadingScale: float64Ptr(1.4),
+			MarginMM:     float64Ptr(14.0),
+		},
+	}
+
+	job.applyThemeOverride()
+
+	if job.ThemeConfig == nil {
+		t.Fatal("expected ThemeConfig to be populated from ThemeOverride")
+	}
+
+	var override ThemeOverride
+	if err := json.Unmarshal(job.ThemeConfig, &override); err != nil {
+		t.Fatalf("ThemeConfig should unmarshal to ThemeOverride: %v", err)
+	}
+
+	if override.BodyFontSize == nil || *override.BodyFontSize != 11.5 {
+		t.Fatalf("expected body_font_size_pt=11.5, got %v", override.BodyFontSize)
+	}
+	if override.CodeFontSize == nil || *override.CodeFontSize != 9.5 {
+		t.Fatalf("expected code_font_size_pt=9.5, got %v", override.CodeFontSize)
+	}
+	if override.HeadingScale == nil || *override.HeadingScale != 1.4 {
+		t.Fatalf("expected heading_scale=1.4, got %v", override.HeadingScale)
+	}
+	if override.MarginMM == nil || *override.MarginMM != 14.0 {
+		t.Fatalf("expected margin_mm=14.0, got %v", override.MarginMM)
+	}
+}
+
+func TestClientMarkdownToPDFWithThemeOverride(t *testing.T) {
+	binaryPath := setupBinary(t)
+	client := NewClient(binaryPath)
+
+	result, err := client.MarkdownToPDF(context.Background(), &MarkdownToPDFJob{
+		MarkdownText: strPtr("# Theme Override\n\nCustom font sizes and margins."),
+		Inline:       true,
+		Theme:        strPtr("professional"),
+		ThemeOverride: &ThemeOverride{
+			BodyFontSize: float64Ptr(12.0),
+			MarginMM:     float64Ptr(20.0),
+		},
+	})
+	if err != nil {
+		t.Fatalf("MarkdownToPDF with ThemeOverride failed: %v", err)
+	}
+	if !result.Success {
+		t.Fatal("expected success")
+	}
+	if result.Outputs[0].DataBase64 == nil {
+		t.Fatal("expected inline PDF bytes")
+	}
+
+	decoded, err := base64.StdEncoding.DecodeString(*result.Outputs[0].DataBase64)
+	if err != nil {
+		t.Fatalf("inline PDF should decode: %v", err)
+	}
+	if len(decoded) < 4 || string(decoded[:4]) != "%PDF" {
+		t.Fatal("decoded inline bytes do not look like a PDF")
+	}
+	assertMetadataBackend(t, result, "typst")
+}

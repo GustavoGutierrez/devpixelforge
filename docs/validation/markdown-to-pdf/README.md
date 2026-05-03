@@ -52,4 +52,4 @@ done
 
 - The output path is committed under `docs/validation/markdown-to-pdf/` so the validation artifacts live next to their reproduction guide.
 - If you rebuild the binary, rerun the same commands to refresh the PDFs.
-- The current `dpf` build resolves `glyphweaveforge 0.1.3` directly from crates.io, so this validation reflects the published dependency path.
+- The current `dpf` build resolves `glyphweaveforge 0.1.6` directly from crates.io (features: `renderer-typst`, `math`, `mermaid`), so this validation reflects the published dependency path.

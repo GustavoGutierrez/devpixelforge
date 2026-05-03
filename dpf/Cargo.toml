@@ -47,7 +47,7 @@ thiserror = "2"
 
 # Base64 for inline output
 base64 = "0.22"
-glyphweaveforge = { version = "0.1.6", features = ["renderer-typst"] }
+glyphweaveforge = { version = "0.1.6", features = ["renderer-typst", "math", "mermaid"] }
 
 # Video & Audio processing (FFmpeg CLI wrapper)
 ffmpeg-sidecar = "2.4.0"
