@@ -43,7 +43,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y musl-tools ffmpeg
-          sudo ln -sf /usr/bin/musl-gcc /usr/bin/x86_64-linux-musl-gcc
+          sudo ln -sf /usr/bin/musl-gcc /usr/bin/x86_64-linux-musl-gcc || true
 
       - name: Setup CC for musl
         if: runner.os == 'Linux'
